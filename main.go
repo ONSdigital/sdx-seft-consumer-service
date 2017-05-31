@@ -1,14 +1,14 @@
 package main
 
 import (
-	"net/http"
 	"encoding/json"
-	"log"
-	"github.com/jlaffaye/ftp"
-	"github.com/gorilla/mux"
 	"fmt"
-	"time"
+	"log"
 	"mime/multipart"
+	"net/http"
+	"time"
+	"github.com/warrenbailey/ftp"
+	"github.com/gorilla/mux"
 )
 
 type HealthCheck struct {
@@ -91,7 +91,11 @@ func connectToFtp() (*ftp.ServerConn, error) {
 	if err != nil {
 		log.Print("Error login into FTP server: ", err)
 	}
-	return conn, nil
+	err = conn.Binary()
+	if err != nil {
+		log.Print("Unable to switch to binary mode: ", err)
+	}
+	return conn, err
 }
 
 
