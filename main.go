@@ -8,9 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"fmt"
 	"time"
-	"os"
-	"io"
-	"path/filepath"
+	"mime/multipart"
 )
 
 type HealthCheck struct {
@@ -48,27 +46,41 @@ func uploadFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error uploading file: " + err.Error(), http.StatusBadRequest)
 		return
 	}
-	directory := filepath.Join("./uploaded/bres/", id)
-
-	if _, err := os.Stat(directory); os.IsNotExist(err) {
-		os.MkdirAll(directory, os.ModePerm)
-	}
-
-	file := filepath.Join(directory, header.Filename)
-	outfile, err := os.Create(file)
+	err = transferToFtp(infile, header, id)
 	if err != nil {
-		http.Error(w, "Error saving file: "+err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	_, err = io.Copy(outfile, infile)
-	if err != nil {
-		http.Error(w, "Error saving file: "+err.Error(), http.StatusBadRequest)
+		http.Error(w, "Error uploading file: " + err.Error(), http.StatusInternalServerError)
 		return
 	}
 	fmt.Fprint(w, "OK")
 }
 
+func transferToFtp(file multipart.File, header *multipart.FileHeader, directory string) error {
+	conn, err  := connectToFtp()
+	if err != nil {
+		log.Print("Unable to connect to FTP")
+		return err
+	}
+	err = conn.ChangeDir(directory)
+	if err != nil {
+		log.Print("Unable to change directory on FTP - attempting to create")
+		err = conn.MakeDir(directory)
+		if err != nil {
+			log.Print("Unable to create directory on FTP")
+			return err
+		}
+		err = conn.ChangeDir(directory)
+		if err != nil {
+			log.Print("Unable to change directory on FTP")
+			return err
+		}
+	}
+	err = conn.Stor(header.Filename, file)
+	if err != nil {
+		log.Print("Unable to store file on to FTP")
+		return err
+	}
+	return nil
+}
 
 func checkFtp() bool {
 	conn, err := connectToFtp()
@@ -88,7 +100,7 @@ func connectToFtp() (*ftp.ServerConn, error) {
 		log.Print(err)
 		return nil, err
 	}
-	conn.Login("ons", "ons")
+	conn.Login("ons-inbound", "ons-inbound")
 	return conn, err
 }
 
