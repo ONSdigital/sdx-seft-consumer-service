@@ -13,7 +13,7 @@ import (
 
 type HealthCheck struct {
 	Status string
-	Ftp string
+	FTP    string
 }
 
 const ok = "OK"
