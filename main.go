@@ -16,13 +16,12 @@ type HealthCheck struct {
 	Ftp string
 }
 
+const ok = "OK"
+const failed = "FAILED"
+
 func healthCheck(w http.ResponseWriter, _ *http.Request) {
-	ok := "OK"
-	failed := "FAILED"
 	var status, ftpStatus = ok, ok
-
-
-	if !checkFtp() {
+	if _, err := connectToFtp(); err != nil {
 		status, ftpStatus = failed, failed
 	}
 
@@ -82,26 +81,17 @@ func transferToFtp(file multipart.File, header *multipart.FileHeader, directory 
 	return nil
 }
 
-func checkFtp() bool {
-	conn, err := connectToFtp()
-	if err != nil {
-		log.Print("FTP healthcheck failed")
-	} else {
-		log.Print("FTP healthcheck sucessful")
-		defer conn.Logout()
-	}
-
-	return err == nil
-}
-
 func connectToFtp() (*ftp.ServerConn, error) {
 	conn, err := ftp.Connect("localhost:2021")
 	if err != nil {
-		log.Print(err)
+		log.Print("Failed to connect to FTP server", err)
 		return nil, err
 	}
-	conn.Login("ons-inbound", "ons-inbound")
-	return conn, err
+	err = conn.Login("ons-inbound", "ons-inbound")
+	if err != nil {
+		log.Print("Error login into FTP server: ", err)
+	}
+	return conn, nil
 }
 
 
