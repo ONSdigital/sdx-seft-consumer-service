@@ -29,27 +29,37 @@ class Consumer(AsyncConsumer):
 
     def on_message(self, unused_channel, basic_deliver, properties, body):
         encrypted_jwt = body.decode("utf-8")
-        
+        logger.debug("Message Received")
+
         decrypted_payload = self._decrypter.decrypt(encrypted_jwt)
-        logger.debug("Decrypted file", decrypted_payload=decrypted_payload)
 
         file_contents = decrypted_payload.get("file")
         file_name = decrypted_payload.get("filename")
+        logger.debug("Decrypted file", file_name=file_name)
 
         decoded_contents = base64.b64decode(file_contents)
 
-        with open("./seft_files/"+file_name, "wb") as fb:
+        with open("./seft_files/" + file_name, "wb") as fb:
             fb.write(decoded_contents)
+        logger.debug("About to deliver to FTP server")
 
-        self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
+        try:
+            self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
+        except IOError as e:
+            logger.exception("Unable to deliver to the FTP server", e)
+        logger.debug("Delivered to FTP server")
+        self.acknowledge_message(basic_deliver.delivery_tag)
 
 
 def main():
+    logger.debug("Starting SEFT consumer service")
     consumer = Consumer()
     try:
         consumer.run()
     except KeyboardInterrupt:
+        logger.debug("SEFT consumer service stopping")
         consumer.stop()
+        logger.debug("SEFT consumer service stopped")
 
 if __name__ == '__main__':
     main()

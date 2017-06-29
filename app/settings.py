@@ -40,5 +40,3 @@ FTP_PORT = os.getenv('FTP_PORT', 2021)
 FTP_USER = os.getenv('FTP_USER', 'ons')
 FTP_PASS = os.getenv('FTP_PASS', 'ons')
 FTP_FOLDER = os.getenv('FTP_FOLDER', '.')
-
-

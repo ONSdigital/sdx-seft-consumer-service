@@ -1,13 +1,16 @@
+import json
 import unittest
 
-from app.tests.encrypter import Encrypter
-from app.decrypter import Decrypter
 from app import settings
+from app.decrypter import Decrypter
 from app.tests import test_settings
-import json
+from app.tests.encrypter import Encrypter
 
 
 class DecrypterTests(unittest.TestCase):
+    '''
+    Tests for the encryption/decryption process
+    '''
 
     def test_decrypt(self):
         encrypter = Encrypter(test_settings.SDX_SEFT_PUBLIC_KEY,
@@ -21,9 +24,6 @@ class DecrypterTests(unittest.TestCase):
         data = json.loads('{"test":"yay"}')
 
         encrypted_data = encrypter.encrypt(data)
-        print(encrypted_data)
-
         decrypted_data = decrypter.decrypt(encrypted_data.decode())
 
-        print(decrypted_data)
-        self.assertEquals(data, decrypted_data)
+        self.assertEqual(data, decrypted_data)

@@ -1,15 +1,11 @@
+import base64
+import os
+
+import jwt
 from cryptography.hazmat.backends.openssl.backend import backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-
-
-import base64
-import os
-import jwt
-
-from app import settings
-
 
 KID = 'SEFT'
 
