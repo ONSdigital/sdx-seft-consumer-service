@@ -135,6 +135,7 @@ class EndToEndTest(unittest.TestCase):
 
     This test requires a rabbit mq server to be running locally with the default settings
     '''
+    @unittest.skip("This test needs a locally running rabbit mq")
     def test_end_to_end(self):
         consumer_thread = ConsumerThread()
         consumer_thread.start()
@@ -159,7 +160,8 @@ class EndToEndTest(unittest.TestCase):
             queue_publisher = QueuePublisher(logger, settings.RABBIT_URLS, settings.RABBIT_QUEUE)
             queue_publisher.publish_message(jwt)
 
-            time.sleep(2)
+            time.sleep(1)
             self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file), "./ftp/" + file))
+        time.sleep(5)
         consumer_thread.stop()
         ftp_thread.stop()
