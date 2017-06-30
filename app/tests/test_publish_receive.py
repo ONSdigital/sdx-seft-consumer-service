@@ -33,7 +33,7 @@ class FTPThread(Thread):
         handler = FTPHandler
         handler.authorizer = authorizer
         handler.abstracted_fs = UnixFilesystem
-        self.server = ThreadedFTPServer(("0.0.0.0", os.getenv('PORT', '2021')), handler)
+        self.server = ThreadedFTPServer((settings.FTP_HOST, settings.FTP_PORT), handler)
 
     def run(self):
         logger.debug("Calling enter")
