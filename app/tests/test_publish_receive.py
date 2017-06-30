@@ -2,7 +2,6 @@ import base64
 import filecmp
 import json
 import logging
-import os
 from os import listdir
 from os.path import isfile, join
 import time

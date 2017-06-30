@@ -9,23 +9,20 @@ from app.tests.encrypter import Encrypter
 
 class DecrypterTests(unittest.TestCase):
 
-
-    def __init__(self):
+    def __init__(self, method_name='runTest'):
+        super().__init__(method_name)
         self.encrypter = Encrypter(test_settings.SDX_SEFT_PUBLIC_KEY,
-                              test_settings.RAS_SEFT_PRIVATE_KEY,
-                              test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
+                                   test_settings.RAS_SEFT_PRIVATE_KEY,
+                                   test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
 
         self.decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                              settings.SDX_SEFT_PRIVATE_KEY,
-                              settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
+                                   settings.SDX_SEFT_PRIVATE_KEY,
+                                   settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
 
     '''
     Tests for the encryption/decryption process
     '''
-
     def test_decrypt(self):
-
-
         data = json.loads('{"test":"yay"}')
 
         encrypted_data = self.encrypter.encrypt(data)
@@ -35,4 +32,4 @@ class DecrypterTests(unittest.TestCase):
 
     @unittest.expectedFailure(DecryptError)
     def test_decrypt_throws_error(self):
-
+        self.decrypter.decrypt(None)
