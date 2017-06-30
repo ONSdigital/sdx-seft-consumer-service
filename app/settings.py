@@ -37,7 +37,7 @@ RAS_SEFT_PUBLIC_KEY = get_key(os.getenv('RAS_SEFT_PUBLIC_KEY', "./test_keys/sdc-
 SDX_SEFT_PRIVATE_KEY = get_key(os.getenv('PRIVATE_KEY', "./test_keys/sdc-seft-encryption-sdx-private-key.pem"))
 SDX_SEFT_PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD", "digitaleq")
 
-FTP_HOST = os.getenv('FTP_HOST', '0.0.0.0')
+FTP_HOST = os.getenv('FTP_HOST', 'localhost')
 FTP_PORT = os.getenv('FTP_PORT', 2021)
 FTP_USER = os.getenv('FTP_USER', 'ons')
 FTP_PASS = os.getenv('FTP_PASS', 'ons')
