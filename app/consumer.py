@@ -32,14 +32,13 @@ class Consumer(AsyncConsumer):
     def on_message(self, unused_channel, basic_deliver, properties, body):
 
         delivery_count = self.get_delivery_count_from_properties(properties)
-        try:
-            tx_id = self.get_tx_id_from_properties(properties)
-        except KeyError as e:
+
+        tx_id = self.get_tx_id_from_properties(properties)
+        if not tx_id:
             self.quarantine_publisher.publish_message(body)
-            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            self.reject_message(basic_deliver.delivery_tag)
             logger.error("No tx_id so quarantining message",
                          action="quarantined",
-                         exception=e,
                          tx_id=tx_id,
                          delivery_count=delivery_count)
 
@@ -85,13 +84,14 @@ class Consumer(AsyncConsumer):
         Returns the tx_id for a message from a rabbit queue. The value is
         auto-set by rabbitmq.
         """
+        tx_id = None
         try:
-            tx_id = properties.headers['tx_id']
-            logger.info("Retrieved tx_id from message properties", tx_id=tx_id)
-            return tx_id
-        except KeyError as e:
+            if properties.headers:
+                tx_id = properties.headers['tx_id']
+                logger.info("Retrieved tx_id from message properties", tx_id=tx_id)
+        except KeyError:
             logger.error("No tx_id in message properties. Sending message to quarantine")
-            raise e
+        return tx_id
 
     @staticmethod
     def get_delivery_count_from_properties(properties):

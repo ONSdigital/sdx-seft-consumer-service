@@ -6,6 +6,7 @@ from os import listdir
 from os.path import isfile, join
 import time
 import unittest
+import uuid
 from threading import Thread
 
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -32,7 +33,7 @@ class FTPThread(Thread):
         handler = FTPHandler
         handler.authorizer = authorizer
         handler.abstracted_fs = UnixFilesystem
-        self.server = ThreadedFTPServer((settings.FTP_HOST, settings.FTP_PORT), handler)
+        self.server = ThreadedFTPServer((settings.FTP_HOST, str(settings.FTP_PORT)), handler)
 
     def run(self):
         logger.debug("Calling enter")
@@ -89,7 +90,8 @@ class EndToEndTest(unittest.TestCase):
             jwt = encrypter.encrypt(payload_as_json)
 
             queue_publisher = QueuePublisher(logger, settings.RABBIT_URLS, settings.RABBIT_QUEUE)
-            queue_publisher.publish_message(jwt)
+            headers = {'tx_id': str(uuid.uuid4())}
+            queue_publisher.publish_message(jwt, headers=headers)
 
             time.sleep(1)
             self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file), "./ftp/" + file))
