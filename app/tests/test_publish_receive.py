@@ -67,7 +67,7 @@ class EndToEndTest(unittest.TestCase):
 
     This test requires a rabbit mq server to be running locally with the default settings
     '''
-    @unittest.skip("This test needs a locally running rabbit mq")
+    # @unittest.skip("This test needs a locally running rabbit mq")
     def test_end_to_end(self):
         consumer_thread = ConsumerThread()
         consumer_thread.start()

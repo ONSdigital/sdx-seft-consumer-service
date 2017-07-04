@@ -95,17 +95,29 @@ class Consumer(AsyncConsumer):
 
         file_contents = decrypted_payload.get("file")
         file_name = decrypted_payload.get("filename")
-        logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
-
-        decoded_contents = base64.b64decode(file_contents)
-
-        try:
-            self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
-            logger.debug("Delivered to FTP server", tx_id=tx_id)
-            self.acknowledge_message(basic_deliver.delivery_tag)
-        except IOError as e:
-            logger.exception("Unable to deliver to the FTP server", e)
-            self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
+        if not file_contents:
+            self.quarantine_publisher.publish_message(body)
+            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            logger.error("Missing file contents - quarantining message",
+                         tx_id=tx_id,
+                         delivery_count=delivery_count)
+        elif not file_name:
+            self.quarantine_publisher.publish_message(body)
+            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            logger.error("Missing filename - quarantining message",
+                         tx_id=tx_id,
+                         delivery_count=delivery_count)
+        else:
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            decoded_contents = base64.b64decode(file_contents)
+            try:
+                self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
+                logger.debug("Delivered to FTP server", tx_id=tx_id)
+                self.acknowledge_message(basic_deliver.delivery_tag)
+            except IOError as e:
+                logger.exception(e)
+                logger.error("Unable to deliver to the FTP server")
+                self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
 
 
 def main():
