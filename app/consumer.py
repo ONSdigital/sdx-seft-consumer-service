@@ -19,15 +19,45 @@ QUEUE = settings.RABBIT_QUEUE
 
 class Consumer(AsyncConsumer):
 
+    @staticmethod
+    def get_tx_id_from_properties(properties):
+        """
+        Returns the tx_id for a message from a rabbit queue. The value is
+        auto-set by rabbitmq.
+        """
+        tx_id = None
+        try:
+            if properties.headers:
+                tx_id = properties.headers['tx_id']
+                logger.info("Retrieved tx_id from message properties", tx_id=tx_id)
+        except KeyError:
+            logger.error("No tx_id in message properties. Sending message to quarantine")
+        return tx_id
+
+    @staticmethod
+    def get_delivery_count_from_properties(properties):
+        """
+        Returns the delivery count for a message from the rabbit queue. The
+        value is auto-set by rabbitmq.
+        """
+        delivery_count = 0
+        if properties.headers and 'x-delivery-count' in properties.headers:
+            delivery_count = properties.headers['x-delivery-count']
+        return delivery_count + 1
+
     def __init__(self, log=None):
         super().__init__(log)
         self._decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
                                     settings.SDX_SEFT_PRIVATE_KEY,
                                     settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
-
-        self.quarantine_publisher = QueuePublisher(logger, settings.RABBIT_URLS, settings.RABBIT_QUARANTINE_QUEUE)
-
-        self._ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
+        self.quarantine_publisher = QueuePublisher(logger,
+                                                   settings.RABBIT_URLS,
+                                                   settings.RABBIT_QUARANTINE_QUEUE)
+        self._ftp = SDXFTP(logger,
+                           settings.FTP_HOST,
+                           settings.FTP_USER,
+                           settings.FTP_PASS,
+                           settings.FTP_PORT)
 
     def on_message(self, unused_channel, basic_deliver, properties, body):
 
@@ -39,7 +69,6 @@ class Consumer(AsyncConsumer):
             self.reject_message(basic_deliver.delivery_tag)
             logger.error("No tx_id so quarantining message",
                          action="quarantined",
-                         tx_id=tx_id,
                          delivery_count=delivery_count)
 
         encrypted_jwt = body.decode("utf-8")
@@ -77,32 +106,6 @@ class Consumer(AsyncConsumer):
         except IOError as e:
             logger.exception("Unable to deliver to the FTP server", e)
             self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
-
-    @staticmethod
-    def get_tx_id_from_properties(properties):
-        """
-        Returns the tx_id for a message from a rabbit queue. The value is
-        auto-set by rabbitmq.
-        """
-        tx_id = None
-        try:
-            if properties.headers:
-                tx_id = properties.headers['tx_id']
-                logger.info("Retrieved tx_id from message properties", tx_id=tx_id)
-        except KeyError:
-            logger.error("No tx_id in message properties. Sending message to quarantine")
-        return tx_id
-
-    @staticmethod
-    def get_delivery_count_from_properties(properties):
-        """
-        Returns the delivery count for a message from the rabbit queue. The
-        value is auto-set by rabbitmq.
-        """
-        delivery_count = 0
-        if properties.headers and 'x-delivery-count' in properties.headers:
-            delivery_count = properties.headers['x-delivery-count']
-        return delivery_count + 1
 
 
 def main():
