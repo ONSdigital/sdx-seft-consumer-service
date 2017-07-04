@@ -26,16 +26,16 @@ RABBIT_URL2 = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
 
 RABBIT_URLS = [RABBIT_URL, RABBIT_URL2]
 
-RABBIT_QUEUE = "Seft.Responses"
+RABBIT_QUEUE = os.getenv("RABBIT_QUEUE", "Seft.Responses")
 RABBIT_EXCHANGE = os.getenv('RABBITMQ_EXCHANGE', 'message')
-RABBIT_QUARANTINE_QUEUE = "Seft.Responses.Quarantine"
+RABBIT_QUARANTINE_QUEUE = os.getenv("RABBIT_QUARANTINE_QUEUE", "Seft.Responses.Quarantine")
 
 # ras keys
 RAS_SEFT_PUBLIC_KEY = get_key(os.getenv('RAS_SEFT_PUBLIC_KEY', "./test_keys/sdc-seft-signing-ras-public-key.pem"))
 
 # sdx keys
-SDX_SEFT_PRIVATE_KEY = get_key(os.getenv('PRIVATE_KEY', "./test_keys/sdc-seft-encryption-sdx-private-key.pem"))
-SDX_SEFT_PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD", "digitaleq")
+SDX_SEFT_PRIVATE_KEY = get_key(os.getenv('SDX_SEFT_PRIVATE_KEY', "./test_keys/sdc-seft-encryption-sdx-private-key.pem"))
+SDX_SEFT_PRIVATE_KEY_PASSWORD = os.getenv("SDX_SEFT_PRIVATE_KEY_PASSWORD", "digitaleq")
 
 FTP_HOST = os.getenv('FTP_HOST', 'localhost')
 FTP_PORT = os.getenv('FTP_PORT', 2021)
