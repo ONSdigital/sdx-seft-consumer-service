@@ -17,6 +17,10 @@ TODO this really needs to change
 QUEUE = settings.RABBIT_QUEUE
 
 
+class ConsumerError(Exception):
+    pass
+
+
 class Consumer(AsyncConsumer):
 
     @staticmethod
@@ -75,7 +79,66 @@ class Consumer(AsyncConsumer):
         logger.debug("Message Received", tx_id=tx_id)
 
         try:
+            decrypted_payload = self._decrypt(basic_deliver,
+                                              body,
+                                              delivery_count,
+                                              encrypted_jwt,
+                                              tx_id)
+
+            decoded_contents, file_name = self._extract_file(basic_deliver,
+                                                             body,
+                                                             decrypted_payload,
+                                                             delivery_count,
+                                                             tx_id)
+
+            self._send_to_ftp(basic_deliver, decoded_contents, file_name, delivery_count, tx_id)
+
+        except ConsumerError:
+            logger.error("Unable to process message", tx_id=tx_id)
+
+    def _send_to_ftp(self, basic_deliver, decoded_contents, file_name, delivery_count, tx_id):
+        try:
+            self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
+            logger.debug("Delivered to FTP server", tx_id=tx_id)
+            self.acknowledge_message(basic_deliver.delivery_tag)
+        except IOError as e:
+            logger.exception(e)
+            logger.error("Unable to deliver to the FTP server")
+            logger.error("Unable to deliver to the FTP server",
+                         action="nack",
+                         exception=e,
+                         tx_id=tx_id,
+                         delivery_count=delivery_count)
+            self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            raise ConsumerError()
+
+    def _extract_file(self, basic_deliver, body, decrypted_payload, delivery_count, tx_id):
+        try:
+            file_contents = decrypted_payload['file']
+            file_name = decrypted_payload['filename']
+            if not file_name or not file_contents:
+                logger.error("Empty claims in message",
+                             file_name=file_name,
+                             file_contents="Encoded data" if file_contents else file_contents)
+                raise ConsumerError()
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            decoded_contents = base64.b64decode(file_contents)
+            return decoded_contents, file_name
+        except (KeyError, ConsumerError) as e:
+            logger.exception(e)
+            logger.error("Required claims missing quarantining message",
+                         keys=decrypted_payload.keys(),
+                         action="quarantined",
+                         tx_id=tx_id,
+                         delivery_count=delivery_count)
+            self.quarantine_publisher.publish_message(body)
+            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            raise ConsumerError()
+
+    def _decrypt(self, basic_deliver, body, delivery_count, encrypted_jwt, tx_id):
+        try:
             decrypted_payload = self._decrypter.decrypt(encrypted_jwt)
+            return decrypted_payload
         except DecryptError as e:
             # Move to the quarantine queue
             self.quarantine_publisher.publish_message(body)
@@ -85,6 +148,7 @@ class Consumer(AsyncConsumer):
                          exception=e,
                          tx_id=tx_id,
                          delivery_count=delivery_count)
+            raise ConsumerError()
         except Exception as e:
             self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
             logger.error("Failed to process",
@@ -92,32 +156,7 @@ class Consumer(AsyncConsumer):
                          exception=e,
                          tx_id=tx_id,
                          delivery_count=delivery_count)
-
-        file_contents = decrypted_payload.get("file")
-        file_name = decrypted_payload.get("filename")
-        if not file_contents:
-            self.quarantine_publisher.publish_message(body)
-            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
-            logger.error("Missing file contents - quarantining message",
-                         tx_id=tx_id,
-                         delivery_count=delivery_count)
-        elif not file_name:
-            self.quarantine_publisher.publish_message(body)
-            self.reject_message(basic_deliver.delivery_tag, tx_id=tx_id)
-            logger.error("Missing filename - quarantining message",
-                         tx_id=tx_id,
-                         delivery_count=delivery_count)
-        else:
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
-            decoded_contents = base64.b64decode(file_contents)
-            try:
-                self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
-                logger.debug("Delivered to FTP server", tx_id=tx_id)
-                self.acknowledge_message(basic_deliver.delivery_tag)
-            except IOError as e:
-                logger.exception(e)
-                logger.error("Unable to deliver to the FTP server")
-                self.nack_message(basic_deliver.delivery_tag, tx_id=tx_id)
+            raise ConsumerError()
 
 
 def main():
