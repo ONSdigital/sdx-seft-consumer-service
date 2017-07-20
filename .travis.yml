@@ -5,11 +5,13 @@ python:
     - "3.4"
 before_install:
     - git clone https://github.com/ONSdigital/sdx-common.git
-    - pip3 install ./sdx-common
+    - pip install ./sdx-common
 install:
-    - "pip install -r requirements.txt"
-    - "pip install -r test_requirements.txt"
-    - "pip install codecov"
+    - pip install -r requirements.txt
+    - pip install -r test_requirements.txt
+    - pip install codecov
+    - pip install flake8
+
 script:
     - flake8
     - python -m unittest */tests/*.py
