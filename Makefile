@@ -14,7 +14,7 @@ dev:
 test:
 	pip install -r test_requirements.txt
 	flake8 --exclude lib .
-	python -m unittest */tests/test*.py
+	python -m unittest discover app/tests/
 
 start:
 	./startup.sh
