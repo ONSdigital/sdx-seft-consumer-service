@@ -1,4 +1,4 @@
-sdx-common>=0.5.1
+sdx-common==0.7.0
 structlog==17.2.0
 cryptography==1.9
 PyJWT==1.5.2
