@@ -6,6 +6,7 @@ def get_key(key_name):
     contents = key.read()
     return contents
 
+
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
@@ -30,7 +31,7 @@ SDX_SEFT_PRIVATE_KEY = get_key(os.getenv('SDX_SEFT_PRIVATE_KEY', "./test_keys/sd
 SDX_SEFT_PRIVATE_KEY_PASSWORD = os.getenv("SDX_SEFT_PRIVATE_KEY_PASSWORD", "digitaleq")
 
 FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
-FTP_PORT = os.getenv('SEFT_FTP_PORT', 2021)
+FTP_PORT = int(os.getenv('SEFT_FTP_PORT', '2021'))
 FTP_USER = os.getenv('SEFT_FTP_USER', 'ons')
 FTP_PASS = os.getenv('SEFT_FTP_PASS', 'ons')
 FTP_FOLDER = os.getenv('SEFT_FTP_FOLDER', '.')
