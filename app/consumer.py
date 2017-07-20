@@ -169,5 +169,6 @@ def main():
         consumer.stop()
         logger.debug("SEFT consumer service stopped")
 
+
 if __name__ == '__main__':
     main()

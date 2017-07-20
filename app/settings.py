@@ -6,6 +6,7 @@ def get_key(key_name):
     contents = key.read()
     return contents
 
+
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
