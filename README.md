@@ -37,24 +37,24 @@ make test
 
 The main configuration options are listed below:
 
-| Environment Variable            | Default                        | Description
-|---------------------------------|--------------------------------|--------------
-| RABBITMQ_HOST                   | `localhost`                    | Host for rabbit mq 1
-| RABBITMQ_HOST2                  | `localhost`                    | Host for rabbit mq 2
-| RABBITMQ_PORT                   | '5672'                         | Port for rabbit mq 1
-| RABBITMQ_PORT2                  | '5672'                         | Port for rabbit mq 2
-| RABBIT_QUEUE                    | `Seft.Responses`               | Incoming queue to read from
-| RABBIT_EXCHANGE                 | `message`                      | RabbitMQ exchange to use
-| RABBIT_QUARANTINE_QUEUE         | `"Seft.Responses.Quarantine"`  | Rabbit quarantine queue
-| FTP_HOST                        | `localhost`                    | FTP host
-| FTP_PORT                        | `2021`                         | FTP port
-| FTP_USER                        | `ons`                          | FTP username
-| FTP_PASS                        | `ons`                          | FTP password
-| FTP_FOLDER                      | `.`                            | FTP Folder
-| RAS_SEFT_PUBLIC_KEY             | ``                             | RAS Public key for checking signing
-| SDX_SEFT_PRIVATE_KEY            | ``                             | SDX Private key for decrypting
-| SDX_SEFT_PRIVATE_KEY_PASSWORD   | ``                             | Password to the SDX private key
-| LOGGING_LEVEL                   | `DEBUG`                        | Logging sensitivity
+| Environment Variable                  | Default                        | Description
+|---------------------------------------|--------------------------------|--------------
+| SEFT_RABBITMQ_HOST                    | `localhost`                    | Host for rabbit mq 1
+| SEFT_RABBITMQ_HOST2                   | `localhost`                    | Host for rabbit mq 2
+| SEFT_RABBITMQ_PORT                    | '5672'                         | Port for rabbit mq 1
+| SEFT_RABBITMQ_PORT2                   | '5672'                         | Port for rabbit mq 2
+| SEFT_CONSUMER_RABBIT_QUEUE            | `Seft.Responses`               | Incoming queue to read from
+| SEFT_RABBIT_EXCHANGE                  | `message`                      | RabbitMQ exchange to use
+| SEFT_CONSUMER_RABBIT_QUARANTINE_QUEUE | `"Seft.Responses.Quarantine"`  | Rabbit quarantine queue
+| SEFT_FTP_HOST                         | `localhost`                    | FTP host
+| SEFT_FTP_PORT                         | `2021`                         | FTP port
+| SEFT_FTP_USER                         | `ons`                          | FTP username
+| SEFT_FTP_PASS                         | `ons`                          | FTP password
+| SEFT_CONSUMER_FTP_FOLDER              | `.`                            | FTP Folder
+| RAS_SEFT_PUBLIC_KEY                   | ``                             | RAS Public key for checking signing
+| SDX_SEFT_PRIVATE_KEY                  | ``                             | SDX Private key for decrypting
+| SDX_SEFT_PRIVATE_KEY_PASSWORD         | ``                             | Password to the SDX private key
+| LOGGING_LEVEL                         | `DEBUG`                        | Logging sensitivity
 
 
 ### License
