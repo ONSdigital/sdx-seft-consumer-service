@@ -19,9 +19,9 @@ RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
 
 RABBIT_URLS = [RABBIT_URL]
 
-RABBIT_QUEUE = os.getenv("SEFT_CONSUMER_RABBIT_QUEUE", "Seft.Responses")
+RABBIT_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUEUE", "Seft.Responses")
 RABBIT_EXCHANGE = os.getenv('SEFT_RABBITMQ_EXCHANGE', 'message')
-RABBIT_QUARANTINE_QUEUE = os.getenv("SEFT_CONSUMER_RABBIT_QUARANTINE_QUEUE", "Seft.Responses.Quarantine")
+RABBIT_QUARANTINE_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUARANTINE_QUEUE", "Seft.Responses.Quarantine")
 
 # ras keys
 RAS_SEFT_PUBLIC_KEY = get_key(os.getenv('RAS_SEFT_PUBLIC_KEY', "./test_keys/sdc-seft-signing-ras-public-key.pem"))
