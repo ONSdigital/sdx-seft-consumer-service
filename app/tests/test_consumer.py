@@ -1,26 +1,21 @@
 import base64
-import unittest
-from unittest.mock import MagicMock
 import json
-from os.path import join
+import unittest
 import uuid
+from os.path import join
+from sdc.rabbit.exceptions import QuarantinableError
 
-from pika.spec import BasicProperties
-from pika.spec import Basic
 
-from app.consumer import Consumer
-from app.tests.encrypter import Encrypter
-from app.tests import test_settings
+from app.main import SeftConsumer
 from app.tests import TEST_FILES_PATH
+from app.tests import test_settings
+from app.tests.encrypter import Encrypter
 
 
 class ConsumerTests(unittest.TestCase):
 
     def test_on_message_fails_with_empty_filename(self):
-        consumer = Consumer()
-        consumer.quarantine_publisher = MagicMock()
-        consumer.reject_message = MagicMock()
-        consumer._channel = MagicMock()
+        consumer = SeftConsumer()
 
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -33,21 +28,14 @@ class ConsumerTests(unittest.TestCase):
                               test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
 
         payload_as_json = json.loads(payload)
-        jwt = encrypter.encrypt(payload_as_json)
-        headers = {'tx_id': str(uuid.uuid4())}
-        properties = BasicProperties(headers=headers)
-        basic_deliver = Basic.Deliver()
+        encrypted_jwt = encrypter.encrypt(payload_as_json)
+        jwt = encrypted_jwt.decode("utf-8")
 
-        consumer.on_message(unused_channel=None, basic_deliver=basic_deliver, properties=properties, body=jwt)
-
-        self.assertTrue(consumer.quarantine_publisher.publish_message.called)
-        self.assertTrue(consumer.reject_message.called)
+        with self.assertRaises(QuarantinableError):
+            consumer.process(jwt, uuid.uuid4())
 
     def test_on_message_fails_with_empty_file_contents(self):
-        consumer = Consumer()
-        consumer.quarantine_publisher = MagicMock()
-        consumer.reject_message = MagicMock()
-        consumer._channel = MagicMock()
+        consumer = SeftConsumer()
 
         payload = '{"filename":"test", "file":""}'
 
@@ -56,21 +44,14 @@ class ConsumerTests(unittest.TestCase):
                               test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
 
         payload_as_json = json.loads(payload)
-        jwt = encrypter.encrypt(payload_as_json)
-        headers = {'tx_id': str(uuid.uuid4())}
-        properties = BasicProperties(headers=headers)
-        basic_deliver = Basic.Deliver()
+        encrypted_jwt = encrypter.encrypt(payload_as_json)
+        jwt = encrypted_jwt.decode("utf-8")
 
-        consumer.on_message(unused_channel=None, basic_deliver=basic_deliver, properties=properties, body=jwt)
-
-        self.assertTrue(consumer.quarantine_publisher.publish_message.called)
-        self.assertTrue(consumer.reject_message.called)
+        with self.assertRaises(QuarantinableError):
+            consumer.process(jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_filename(self):
-        consumer = Consumer()
-        consumer.quarantine_publisher = MagicMock()
-        consumer.reject_message = MagicMock()
-        consumer._channel = MagicMock()
+        consumer = SeftConsumer()
 
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -83,21 +64,14 @@ class ConsumerTests(unittest.TestCase):
                               test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
 
         payload_as_json = json.loads(payload)
-        jwt = encrypter.encrypt(payload_as_json)
-        headers = {'tx_id': str(uuid.uuid4())}
-        properties = BasicProperties(headers=headers)
-        basic_deliver = Basic.Deliver()
+        encrypted_jwt = encrypter.encrypt(payload_as_json)
+        jwt = encrypted_jwt.decode("utf-8")
 
-        consumer.on_message(unused_channel=None, basic_deliver=basic_deliver, properties=properties, body=jwt)
-
-        self.assertTrue(consumer.quarantine_publisher.publish_message.called)
-        self.assertTrue(consumer.reject_message.called)
+        with self.assertRaises(QuarantinableError):
+            consumer.process(jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_file_contents(self):
-        consumer = Consumer()
-        consumer.quarantine_publisher = MagicMock()
-        consumer.reject_message = MagicMock()
-        consumer._channel = MagicMock()
+        consumer = SeftConsumer()
 
         payload = '{"filename":"test"}'
 
@@ -106,12 +80,8 @@ class ConsumerTests(unittest.TestCase):
                               test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
 
         payload_as_json = json.loads(payload)
-        jwt = encrypter.encrypt(payload_as_json)
-        headers = {'tx_id': str(uuid.uuid4())}
-        properties = BasicProperties(headers=headers)
-        basic_deliver = Basic.Deliver()
+        encrypted_jwt = encrypter.encrypt(payload_as_json)
+        jwt = encrypted_jwt.decode("utf-8")
 
-        consumer.on_message(unused_channel=None, basic_deliver=basic_deliver, properties=properties, body=jwt)
-
-        self.assertTrue(consumer.quarantine_publisher.publish_message.called)
-        self.assertTrue(consumer.reject_message.called)
+        with self.assertRaises(QuarantinableError):
+            consumer.process(jwt, uuid.uuid4())
