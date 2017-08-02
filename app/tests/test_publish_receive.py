@@ -93,7 +93,7 @@ class EndToEndTest(unittest.TestCase):
             jwt = encrypter.encrypt(payload_as_json)
 
             queue_publisher = QueuePublisher(settings.RABBIT_URLS, settings.RABBIT_QUEUE)
-            headers = {'tx_id': str(uuid.uuid4()), "x-delivery-count": 99999}
+            headers = {'tx_id': str(uuid.uuid4())}
             queue_publisher.publish_message(jwt, headers=headers)
 
             time.sleep(1)
