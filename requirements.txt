@@ -3,4 +3,4 @@ structlog==17.2.0
 cryptography==1.9
 PyJWT==1.5.2
 pika==0.10.0
-sdc-rabbit==0.3.1
+sdc-rabbit==0.3.2
