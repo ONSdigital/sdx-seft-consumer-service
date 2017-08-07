@@ -13,10 +13,11 @@ from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.filesystems import UnixFilesystem
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import ThreadedFTPServer
+import tornado
 
 from app import settings
-from app.consumer import Consumer
-from app.publisher import QueuePublisher
+from app.main import SeftConsumer
+from sdc.rabbit.publisher import QueuePublisher
 from app.tests import test_settings
 from app.tests.encrypter import Encrypter
 from app.tests import TEST_FILES_PATH
@@ -51,12 +52,14 @@ class FTPThread(Thread):
 class ConsumerThread(Thread):
     def __init__(self):
         super().__init__()
-        self._consumer = Consumer()
+        self._consumer = SeftConsumer()
 
     def run(self):
         self._consumer.run()
 
     def stop(self):
+        io_loop = tornado.ioloop.IOLoop.current()
+        io_loop.stop()
         self._consumer.stop()
 
 
@@ -89,7 +92,7 @@ class EndToEndTest(unittest.TestCase):
             payload_as_json = json.loads(payload)
             jwt = encrypter.encrypt(payload_as_json)
 
-            queue_publisher = QueuePublisher(logger, settings.RABBIT_URLS, settings.RABBIT_QUEUE)
+            queue_publisher = QueuePublisher(settings.RABBIT_URLS, settings.RABBIT_QUEUE)
             headers = {'tx_id': str(uuid.uuid4())}
             queue_publisher.publish_message(jwt, headers=headers)
 
