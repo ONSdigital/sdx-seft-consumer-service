@@ -15,3 +15,13 @@
 
 # Pycharm IDE
 .idea
+
+# Pycache
+
+__pycache__
+tests/__pycache/
+
+# Spreadsheets
+
+.xlsx
+.xls
