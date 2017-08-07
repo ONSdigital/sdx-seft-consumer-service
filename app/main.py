@@ -9,6 +9,10 @@ from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 
 from sdc.rabbit.consumers import MessageConsumer
 
+import tornado.web
+from tornado.httpclient import HTTPClient
+import threading
+
 logger = create_and_wrap_logger(__name__)
 
 
@@ -39,10 +43,13 @@ class SeftConsumer:
 
         try:
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
+            logger.debug("Decrypted message", tx_id=tx_id)
 
             decoded_contents, file_name = self._extract_file(decrypted_payload, tx_id)
+            logger.debug("Extract file", tx_id=tx_id)
 
             self._send_to_ftp(decoded_contents, file_name, tx_id)
+            logger.debug("Sent to FTP", tx_id=tx_id)
 
         except ConsumerError:
             logger.error("Unable to process message", tx_id=tx_id)
@@ -95,16 +102,64 @@ class SeftConsumer:
             raise RetryableError()
 
     def run(self):
+        logger.debug("Starting consumer")
         self.consumer.run()
 
     def stop(self):
+        logger.debug("Stopping consumer")
         self.consumer.stop()
+
+
+class HealthCheck(tornado.web.RequestHandler):
+
+    @staticmethod
+    def rabbit_health():
+        http_client = HTTPClient()
+        resp = http_client.fetch('http://localhost:15672/api/healthchecks/node', auth_username='admin', auth_password='admin')
+        if resp.code == 200:
+            health = "ok"
+        else:
+            health = "failed"
+        return health
+
+    @staticmethod
+    def ftp_health():
+        ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
+        conn = ftp.get_connection()
+        if conn.lastresp == '230':
+            health = "ok"
+        else:
+            health = "failed"
+        return health
+
+    def initialize(self):
+        self.get_health()
+        threading.Timer(300, self.get_health()).start()
+
+    def get_health(self):
+        self.rabbit_status = self.rabbit_health()
+        self.ftp_status = self.ftp_health()
+        if self.rabbit_status == "ok" and self.ftp_status == "ok":
+            self.app_status = "ok"
+        else:
+            self.app_status = "failed"
+
+    def get(self):
+        self.write({"status": self.app_status, "dependencies": {"rabbitmq": self.rabbit_status, "ftp": self.ftp_status}})
+
+
+def make_app():
+    return tornado.web.Application([
+        (r"/healthcheck", HealthCheck),
+    ])
 
 
 def main():
     logger.debug("Starting SEFT consumer service")
 
     seft_consumer = SeftConsumer()
+    app = make_app()
+    app.listen(8080)
 
     try:
         seft_consumer.run()
