@@ -12,6 +12,7 @@ from sdc.rabbit.consumers import MessageConsumer
 import tornado.web
 from tornado.httpclient import HTTPClient
 import threading
+import json
 
 logger = create_and_wrap_logger(__name__)
 
@@ -106,7 +107,7 @@ class SeftConsumer:
         self.consumer.run()
 
     def stop(self):
-        logger.debug("Stopping consumer")
+        logger.debug("Stopping consumer ")
         self.consumer.stop()
 
 
@@ -115,8 +116,10 @@ class HealthCheck(tornado.web.RequestHandler):
     @staticmethod
     def rabbit_health():
         http_client = HTTPClient()
-        resp = http_client.fetch('http://localhost:15672/api/healthchecks/node', auth_username='admin', auth_password='admin')
-        if resp.code == 200:
+        resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL, auth_username=settings.SEFT_RABBITMQ_MONITORING_USER, auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
+        body = resp.body.decode('utf8')
+        body = json.loads(body)
+        if body['status'] == "ok":
             health = "ok"
         else:
             health = "failed"
@@ -125,10 +128,10 @@ class HealthCheck(tornado.web.RequestHandler):
     @staticmethod
     def ftp_health():
         ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
-        conn = ftp.get_connection()
-        if conn.lastresp == '230':
+        try:
+            conn = ftp.get_connection()
             health = "ok"
-        else:
+        except:
             health = "failed"
         return health
 

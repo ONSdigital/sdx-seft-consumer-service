@@ -17,6 +17,14 @@ RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     vhost=os.getenv('SEFT_RABBITMQ_DEFAULT_VHOST', '%2f')
 )
 
+RABBIT_HEALTHCHECK_URL = "http://{hostname}:{port}/api/healthchecks/node".format(
+    hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
+    port=os.getenv('SEFT_RABBITMQ_PORT', 5672)
+)
+
+SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'rabbit')
+SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'rabbit')
+
 RABBIT_URLS = [RABBIT_URL]
 
 RABBIT_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUEUE", "Seft.Responses")
