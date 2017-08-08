@@ -80,7 +80,7 @@ class SeftConsumer:
     def _decrypt(self, encrypted_jwt, tx_id):
         try:
             return self._decrypter.decrypt(encrypted_jwt)
-        except DecryptError as e:
+        except (DecryptError, ValueError) as e:
             logger.error("Bad decrypt",
                          action="quarantined",
                          exception=e,
@@ -91,7 +91,7 @@ class SeftConsumer:
                          action="retry",
                          exception=e,
                          tx_id=tx_id)
-            raise RetryableError()
+            raise QuarantinableError()
 
     def run(self):
         self.consumer.run()
