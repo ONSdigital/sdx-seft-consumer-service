@@ -25,7 +25,7 @@ class DecryptError(Exception):
 
 
 class Decrypter(object):
-    def __init__(self, public_key, private_key, ):
+    def __init__(self, public_key, private_key):
         self.public_key = serialization.load_pem_public_key(
             public_key.encode(),
             backend=backend
