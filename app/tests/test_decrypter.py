@@ -14,13 +14,11 @@ class DecrypterTests(unittest.TestCase):
 
     def __init__(self, method_name='runTest'):
         super().__init__(method_name)
-        self.encrypter = Encrypter(test_settings.SDX_SEFT_PUBLIC_KEY,
-                                   test_settings.RAS_SEFT_PRIVATE_KEY,
-                                   test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
+        self.encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
+                                   test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
 
-        self.decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                                   settings.SDX_SEFT_PRIVATE_KEY,
-                                   settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
+        self.decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                                   settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
 
     def test_decrypt(self):
         data = json.loads('{"test":"data"}')
@@ -36,8 +34,8 @@ class DecrypterTests(unittest.TestCase):
 
     @unittest.expectedFailure(DecryptError)
     def test_decrypt_throws_error_with_incorrect_key_password(self):
-        decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                              settings.SDX_SEFT_PRIVATE_KEY,
+        decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                              settings.SDX_SEFT_CONSUMER_PRIVATE_KEY,
                               "incorrect password")
 
         data = json.loads('{"test":"data"}')
@@ -46,9 +44,9 @@ class DecrypterTests(unittest.TestCase):
 
     @unittest.expectedFailure(DecryptError)
     def test_decrypt_throws_error_with_wrong_key_in_encryptor(self):
-        self.encrypter = Encrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                                   test_settings.RAS_SEFT_PRIVATE_KEY,
-                                   test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
+        self.encrypter = Encrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                                   test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY,
+                                   test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY_PASSWORD)
 
         data = json.loads('{"test":"data"}')
         encrypted_data = self.encrypter.encrypt(data)
