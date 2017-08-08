@@ -14,8 +14,10 @@ import tornado.web
 from tornado.httpclient import HTTPClient
 import threading
 import json
+import os
 
 logger = create_and_wrap_logger(__name__)
+healthcheck_delay = 300
 
 
 class ConsumerError(Exception):
@@ -41,20 +43,22 @@ class SeftConsumer:
 
     def process(self, encrypted_jwt, tx_id=None):
 
-        logger.debug("Message Received", tx_id=tx_id)
+        bound_logger = logger.bind(tx_id=tx_id)
+
+        bound_logger.debug("Message Received")
 
         try:
+            bound_logger.info("Decrypt message")
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
-            logger.debug("Decrypted message", tx_id=tx_id)
 
+            bound_logger.info("Extracting file")
             decoded_contents, file_name = self._extract_file(decrypted_payload, tx_id)
-            logger.debug("Extract file", tx_id=tx_id)
 
+            bound_logger.info("Send " + file_name + " to ftp server.")
             self._send_to_ftp(decoded_contents, file_name, tx_id)
-            logger.debug("Sent to FTP", tx_id=tx_id)
 
         except ConsumerError:
-            logger.error("Unable to process message", tx_id=tx_id)
+            bound_logger.error("Unable to process message")
 
     def _send_to_ftp(self, decoded_contents, file_name, tx_id):
         try:
@@ -119,28 +123,25 @@ class HealthCheck(tornado.web.RequestHandler):
         http_client = HTTPClient()
         resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL, auth_username=settings.SEFT_RABBITMQ_MONITORING_USER,
                                  auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
-        body = resp.body.decode('utf8')
-        body = json.loads(body)
+        body = json.loads(resp.body.decode('utf8'))
         if body.get('status') == "ok":
-            health = body.get('status')
-        else:
-            health = "failed"
-        return health
+            return body.get('status')
+        return "failed"
 
     @staticmethod
     def ftp_health():
         ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
         try:
-            ftp.get_connection()
-            health = "ok"
+            conn = ftp._connect()
+            conn.voidcmd("NOOP")
+            return "ok"
         except Error as e:
             logger.debug("FTP error raised" + e)
-            health = "failed"
-        return health
+            return "failed"
 
     def initialize(self):
         self.get_health()
-        threading.Timer(300, self.get_health()).start()
+        threading.Timer(healthcheck_delay, self.get_health()).start()
 
     def get_health(self):
         self.rabbit_status = self.rabbit_health()
@@ -165,7 +166,8 @@ def main():
 
     seft_consumer = SeftConsumer()
     app = make_app()
-    app.listen(8080)
+    port = int(os.getenv("PORT"))
+    app.listen(port)
 
     try:
         seft_consumer.run()
