@@ -18,9 +18,8 @@ class ConsumerError(Exception):
 
 class SeftConsumer:
     def __init__(self):
-        self._decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                                    settings.SDX_SEFT_PRIVATE_KEY,
-                                    settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
+        self._decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                                    settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
         self._ftp = SDXFTP(logger,
                            settings.FTP_HOST,
                            settings.FTP_USER,

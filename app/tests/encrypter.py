@@ -13,11 +13,11 @@ KID = 'SEFT'
 
 
 class Encrypter (object):
-    def __init__(self, public_key, private_key, private_key_password):
+    def __init__(self, public_key, private_key):
         private_key_bytes = self._to_bytes(private_key)
 
         self.private_key = serialization.load_pem_private_key(private_key_bytes,
-                                                              password=self._to_bytes(private_key_password),
+                                                              password=None,
                                                               backend=backend)
 
         self.public_key = serialization.load_pem_public_key(public_key.encode(), backend=backend)

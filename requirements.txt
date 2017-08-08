@@ -1,6 +1,6 @@
 sdx-common==0.7.0
 structlog==17.2.0
 cryptography==1.9
-PyJWT==1.5.2
+PyJWT==1..2
 pika==0.10.0
 sdc-rabbit==0.3.2

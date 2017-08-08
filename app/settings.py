@@ -24,11 +24,10 @@ RABBIT_EXCHANGE = os.getenv('SEFT_RABBITMQ_EXCHANGE', 'message')
 RABBIT_QUARANTINE_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUARANTINE_QUEUE", "Seft.Responses.Quarantine")
 
 # ras keys
-RAS_SEFT_PUBLIC_KEY = get_key(os.getenv('RAS_SEFT_PUBLIC_KEY', "./test_keys/sdc-seft-signing-ras-public-key.pem"))
+RAS_SEFT_CONSUMER_PUBLIC_KEY = get_key(os.getenv('RAS_SEFT_CONSUMER_PUBLIC_KEY', "./test_keys/sdc-seft-signing-ras-public-key.pem"))
 
 # sdx keys
-SDX_SEFT_PRIVATE_KEY = get_key(os.getenv('SDX_SEFT_PRIVATE_KEY', "./test_keys/sdc-seft-encryption-sdx-private-key.pem"))
-SDX_SEFT_PRIVATE_KEY_PASSWORD = os.getenv("SDX_SEFT_PRIVATE_KEY_PASSWORD", "digitaleq")
+SDX_SEFT_CONSUMER_PRIVATE_KEY = get_key(os.getenv('SDX_SEFT_CONSUMER_PRIVATE_KEY', "./test_keys/sdc-seft-encryption-sdx-private-key.pem"))
 
 FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
 FTP_PORT = int(os.getenv('SEFT_FTP_PORT', '2021'))
