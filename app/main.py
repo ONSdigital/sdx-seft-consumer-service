@@ -6,6 +6,7 @@ from app.decrypter import Decrypter, DecryptError
 from app.sdxftp import SDXFTP
 from sdc.rabbit.publisher import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from ftplib import Error
 
 from sdc.rabbit.consumers import MessageConsumer
 
@@ -116,11 +117,12 @@ class HealthCheck(tornado.web.RequestHandler):
     @staticmethod
     def rabbit_health():
         http_client = HTTPClient()
-        resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL, auth_username=settings.SEFT_RABBITMQ_MONITORING_USER, auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
+        resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL, auth_username=settings.SEFT_RABBITMQ_MONITORING_USER,
+                                 auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
         body = resp.body.decode('utf8')
         body = json.loads(body)
-        if body['status'] == "ok":
-            health = "ok"
+        if body.get('status') == "ok":
+            health = body.get('status')
         else:
             health = "failed"
         return health
@@ -129,9 +131,10 @@ class HealthCheck(tornado.web.RequestHandler):
     def ftp_health():
         ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
         try:
-            conn = ftp.get_connection()
+            ftp.get_connection()
             health = "ok"
-        except:
+        except Error as e:
+            logger.debug("FTP error raised" + e)
             health = "failed"
         return health
 
