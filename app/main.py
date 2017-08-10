@@ -136,7 +136,7 @@ class HealthCheck(tornado.web.RequestHandler):
             conn.voidcmd("NOOP")
             return "ok"
         except Error as e:
-            logger.debug("FTP error raised" + e)
+            logger.debug("FTP error raised" + str(e))
             return "failed"
 
     def initialize(self):
