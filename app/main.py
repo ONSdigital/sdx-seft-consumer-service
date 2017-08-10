@@ -26,9 +26,8 @@ class ConsumerError(Exception):
 
 class SeftConsumer:
     def __init__(self):
-        self._decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                                    settings.SDX_SEFT_PRIVATE_KEY,
-                                    settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
+        self._decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                                    settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
         self._ftp = SDXFTP(logger,
                            settings.FTP_HOST,
                            settings.FTP_USER,
@@ -94,7 +93,7 @@ class SeftConsumer:
     def _decrypt(self, encrypted_jwt, tx_id):
         try:
             return self._decrypter.decrypt(encrypted_jwt)
-        except DecryptError as e:
+        except (DecryptError, ValueError) as e:
             logger.error("Bad decrypt",
                          action="quarantined",
                          exception=e,
@@ -105,7 +104,7 @@ class SeftConsumer:
                          action="retry",
                          exception=e,
                          tx_id=tx_id)
-            raise RetryableError()
+            raise QuarantinableError()
 
     def run(self):
         logger.debug("Starting consumer")

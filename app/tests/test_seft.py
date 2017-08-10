@@ -27,16 +27,14 @@ class SeftTests(unittest.TestCase):
                 encoded_contents = base64.b64encode(contents)
 
                 payload = '{"file":"' + encoded_contents.decode() + '"}'
-                encrypter = Encrypter(test_settings.SDX_SEFT_PUBLIC_KEY,
-                                      test_settings.RAS_SEFT_PRIVATE_KEY,
-                                      test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
+                encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
+                                      test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
 
                 payload_as_json = json.loads(payload)
                 jwt = encrypter.encrypt(payload_as_json)
 
-                decrypter = Decrypter(settings.RAS_SEFT_PUBLIC_KEY,
-                                      settings.SDX_SEFT_PRIVATE_KEY,
-                                      settings.SDX_SEFT_PRIVATE_KEY_PASSWORD)
+                decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
+                                      settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
 
                 decrypted_payload = decrypter.decrypt(jwt.decode())
 
