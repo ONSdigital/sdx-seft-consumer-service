@@ -85,9 +85,8 @@ class EndToEndTest(unittest.TestCase):
 
                 payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '"}'
 
-            encrypter = Encrypter(test_settings.SDX_SEFT_PUBLIC_KEY,
-                                  test_settings.RAS_SEFT_PRIVATE_KEY,
-                                  test_settings.RAS_SEFT_PRIVATE_KEY_PASSWORD)
+            encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
+                                  test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
 
             payload_as_json = json.loads(payload)
             jwt = encrypter.encrypt(payload_as_json)
