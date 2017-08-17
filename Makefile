@@ -2,13 +2,11 @@
 .PHONY: clean  build test start dev
 
 build:
-	git clone -b 0.7.0 https://github.com/ONSdigital/sdx-common.git
-	pip install ./sdx-common
 	pip install -r requirements.txt
 	rm -rf sdx-common
 
 dev:
-	cd .. && pip3 uninstall -y sdx-common && pip3 install -I ./sdx-common
+	cd ..  && pip3 install -I ./sdc-cryptography
 	pip install -r requirements.txt
 
 test:
@@ -20,4 +18,4 @@ start:
 	./startup.sh
 
 clean:
-	rm -rf ./sdx-common
+	rm -rf ./sdx-common && pip3 uninstall -y sdc-cryptography
