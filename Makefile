@@ -3,10 +3,8 @@
 
 build:
 	pip install -r requirements.txt
-	rm -rf sdx-common
 
 dev:
-	cd ..  && pip3 install -I ./sdc-cryptography
 	pip install -r requirements.txt
 
 test:
@@ -16,6 +14,3 @@ test:
 
 start:
 	./startup.sh
-
-clean:
-	rm -rf ./sdx-common && pip3 uninstall -y sdc-cryptography
