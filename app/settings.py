@@ -1,4 +1,7 @@
 import os
+import requests
+from requests.packages.urllib3.util.retry import Retry
+from requests.adapters import HTTPAdapter
 
 
 def get_key(key_name):
@@ -8,6 +11,8 @@ def get_key(key_name):
 
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
+
+RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
 
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
@@ -30,3 +35,9 @@ FTP_PASS = os.getenv('SEFT_FTP_PASS', 'ons')
 FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 
 SDX_KEYS_FILE = os.getenv('SDX_KEYS_FILE', 'keys.yml')
+
+# Configure the number of retries attempted before failing call
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=0.1)
+session.mount('http://', HTTPAdapter(max_retries=retries))
+session.mount('https://', HTTPAdapter(max_retries=retries))
