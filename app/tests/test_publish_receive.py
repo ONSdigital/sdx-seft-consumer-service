@@ -83,7 +83,7 @@ class EndToEndTest(unittest.TestCase):
                 contents = fb.read()
                 encoded_contents = base64.b64encode(contents)
 
-                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '"}'
+                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
 
             encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
                                   test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
