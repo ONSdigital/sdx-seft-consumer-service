@@ -37,8 +37,6 @@ def rabbit_running():
         print("Rabbit Not Running")
         return False
 
-RABBIT_RUNNING = rabbit_running()
-
 
 class FTPThread(Thread):
     def __init__(self):
