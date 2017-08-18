@@ -8,6 +8,7 @@ def get_key(key_name):
 
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
+HEALTHCHECK_DELAY = os.getenv("HEALTHCHECK_DELAY", 300)
 
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
@@ -22,8 +23,8 @@ RABBIT_HEALTHCHECK_URL = "http://{hostname}:{port}/api/healthchecks/node".format
     port=os.getenv('SEFT_RABBITMQ_PORT', 5672)
 )
 
-SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'rabbit')
-SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'rabbit')
+SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'admin')
+SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'admin')
 
 RABBIT_URLS = [RABBIT_URL]
 

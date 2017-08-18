@@ -3,11 +3,21 @@ from unittest.mock import patch
 from app.main import HealthCheck
 from app.sdxftp import SDXFTP
 from ftplib import Error
+import pika
+import pika.exceptions
+
+
+def connect_to_rabbit():
+    try:
+        pika.BlockingConnection(pika.URLParameters('amqp://admin:admin@0.0.0.0:5672'))
+        return "ok"
+    except pika.exceptions.ConnectionClosed:
+        return "fail"
 
 
 class TestHealthCheck(unittest.TestCase):
 
-    @unittest.skip("This test needs a locally running rabbit mq")
+    @unittest.skipIf(connect_to_rabbit() == "fail", "no running rabbitmq")
     def test_rabbit_mq_health_check(self):
         self.assertEqual(HealthCheck.rabbit_health(), "ok")
 

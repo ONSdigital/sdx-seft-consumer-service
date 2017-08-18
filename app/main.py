@@ -11,13 +11,14 @@ from ftplib import Error
 from sdc.rabbit.consumers import MessageConsumer
 
 import tornado.web
-from tornado.httpclient import HTTPClient
-import threading
+import tornado.httpserver
+from tornado.httpclient import HTTPClient, HTTPError
+from threading import Thread, Event
 import json
 import os
 
 logger = create_and_wrap_logger(__name__)
-healthcheck_delay = 300
+HEALTHCHECK_DELAY_SECONDS = settings.HEALTHCHECK_DELAY
 
 
 class ConsumerError(Exception):
@@ -43,21 +44,20 @@ class SeftConsumer:
     def process(self, encrypted_jwt, tx_id=None):
 
         bound_logger = logger.bind(tx_id=tx_id)
-
         bound_logger.debug("Message Received")
-
         try:
-            bound_logger.info("Decrypt message")
+            bound_logger.info("Decrypting message")
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
             bound_logger.info("Extracting file")
             decoded_contents, file_name = self._extract_file(decrypted_payload, tx_id)
 
-            bound_logger.info("Send " + file_name + " to ftp server.")
+            bound_logger.info("Send {} to ftp server.".format(file_name))
             self._send_to_ftp(decoded_contents, file_name, tx_id)
 
-        except ConsumerError:
+        except QuarantinableError:
             bound_logger.error("Unable to process message")
+            raise
 
     def _send_to_ftp(self, decoded_contents, file_name, tx_id):
         try:
@@ -111,47 +111,71 @@ class SeftConsumer:
         self.consumer.run()
 
     def stop(self):
-        logger.debug("Stopping consumer ")
+        logger.debug("Stopping consumer")
         self.consumer.stop()
 
 
 class HealthCheck(tornado.web.RequestHandler):
+    """This handles all the healthcheck functionality for the application.
+
+       The status of the application is determined by the rabbitmq health and ftp health.
+       This is done by performing a healthcheck on rabbitmq and checking the application
+       has a live ftp connection. This check is done in the background after a delay.
+       When the healthcheck endpoint endpoint is hit a 200 status is returned with
+       app status as well as the dependencies of rabbitmq and ftp."""
 
     @staticmethod
     def rabbit_health():
-        http_client = HTTPClient()
-        resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL, auth_username=settings.SEFT_RABBITMQ_MONITORING_USER,
-                                 auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
-        body = json.loads(resp.body.decode('utf8'))
-        if body.get('status') == "ok":
-            return body.get('status')
+        try:
+            http_client = HTTPClient()
+            resp = http_client.fetch(settings.RABBIT_HEALTHCHECK_URL,
+                                     auth_username=settings.SEFT_RABBITMQ_MONITORING_USER,
+                                     auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
+            body = json.loads(resp.body.decode('utf8'))
+            status = body.get('status')
+            if not status:
+                status = "failed"
+            return status
+        except HTTPError as e:
+            logger.error("Error receiving rabbit health " + str(e))
+
         return "failed"
 
     @staticmethod
     def ftp_health():
-        ftp = SDXFTP(logger, settings.FTP_HOST, settings.FTP_USER, settings.FTP_PASS, settings.FTP_PORT)
+        ftp = SDXFTP(logger,
+                     settings.FTP_HOST,
+                     settings.FTP_USER,
+                     settings.FTP_PASS,
+                     settings.FTP_PORT)
         try:
             conn = ftp._connect()
             conn.voidcmd("NOOP")
             return "ok"
         except Error as e:
-            logger.debug("FTP error raised" + str(e))
+            logger.error("FTP error raised" + str(e))
             return "failed"
 
     def initialize(self):
-        self.get_health()
-        threading.Timer(healthcheck_delay, self.get_health()).start()
+        self.stop_flag = Event()
+        thread = TimerThread(self.stop_flag)
+        thread.run()
+
+    def stop_timer(self):
+        self.stop_flag.set()
 
     def get_health(self):
         self.rabbit_status = self.rabbit_health()
         self.ftp_status = self.ftp_health()
         if self.rabbit_status == "ok" and self.ftp_status == "ok":
-            self.app_status = "ok"
+            self.healthy = True
         else:
-            self.app_status = "failed"
+            self.healthy = False
 
     def get(self):
-        self.write({"status": self.app_status, "dependencies": {"rabbitmq": self.rabbit_status, "ftp": self.ftp_status}})
+        self.write({"status": self.healthy,
+                    "dependencies": {"rabbitmq": self.rabbit_status,
+                                     "ftp": self.ftp_status}})
 
 
 def make_app():
@@ -160,13 +184,25 @@ def make_app():
     ])
 
 
+class TimerThread(Thread):
+
+    def __init__(self, event):
+        Thread.__init__(self)
+        self.stopped = event
+
+    def run(self):
+        while not self.stopped.wait(HEALTHCHECK_DELAY_SECONDS):
+            HealthCheck.get_health()
+
+
 def main():
     logger.debug("Starting SEFT consumer service")
 
     seft_consumer = SeftConsumer()
     app = make_app()
-    port = int(os.getenv("PORT"))
-    app.listen(port)
+    server = tornado.httpserver.HTTPServer(app)
+    server.bind(int(os.getenv("PORT", '8080')))
+    server.start(0)
 
     try:
         seft_consumer.run()
