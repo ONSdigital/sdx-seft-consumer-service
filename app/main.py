@@ -1,13 +1,16 @@
 import base64
 
+from requests.packages.urllib3.exceptions import MaxRetryError
+from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.rabbit.consumers import MessageConsumer
+
 from app import create_and_wrap_logger
 from app import settings
 from app.decrypter import Decrypter, DecryptError
 from app.sdxftp import SDXFTP
-from sdc.rabbit.publisher import QueuePublisher
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from app.settings import session, RM_SDX_GATEWAY_URL
 
-from sdc.rabbit.consumers import MessageConsumer
 
 logger = create_and_wrap_logger(__name__)
 
@@ -39,12 +42,37 @@ class SeftConsumer:
         try:
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
-            decoded_contents, file_name = self._extract_file(decrypted_payload, tx_id)
+            decoded_contents, file_name, case_id = self._extract_file(decrypted_payload, tx_id)
+
+            self._send_receipt(case_id, tx_id)
 
             self._send_to_ftp(decoded_contents, file_name, tx_id)
 
         except ConsumerError:
             logger.error("Unable to process message", tx_id=tx_id)
+
+    def _send_receipt(self, case_id, tx_id):
+        request_url = RM_SDX_GATEWAY_URL
+
+        r = None
+
+        try:
+            r = session.post(request_url, json={'caseId': case_id})
+        except MaxRetryError:
+            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id)
+            raise RetryableError
+
+        if r.status_code == 200 or r.status_code == 201:
+            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id)
+            return
+
+        elif 400 <= r.status_code < 500:
+            logger.error("RM sdx gateway returned client error", request_url=request_url, tx_id=tx_id)
+            raise QuarantinableError
+
+        else:
+            logger.error("Service error", request_url=request_url, tx_id=tx_id)
+            raise RetryableError
 
     def _send_to_ftp(self, decoded_contents, file_name, tx_id):
         try:
@@ -61,14 +89,15 @@ class SeftConsumer:
         try:
             file_contents = decrypted_payload['file']
             file_name = decrypted_payload['filename']
-            if not file_name or not file_contents:
+            case_id = decrypted_payload['case_id']
+            if not file_name or not file_contents or not case_id:
                 logger.error("Empty claims in message",
                              file_name=file_name,
                              file_contents="Encoded data" if file_contents else file_contents)
                 raise ConsumerError()
             logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
             decoded_contents = base64.b64decode(file_contents)
-            return decoded_contents, file_name
+            return decoded_contents, file_name, case_id
         except (KeyError, ConsumerError) as e:
             logger.error("Required claims missing quarantining message",
                          exception=e,
