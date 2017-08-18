@@ -3,3 +3,4 @@
   - Namespace config
   - FTP port must be an int
   - Updated to use SDC crypto library
+  - Added consumer receipting
