@@ -10,10 +10,10 @@ def get_key(key_name):
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
-    hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
+    hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
     port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
-    user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'rabbit'),
-    password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'rabbit'),
+    user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
+    password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
     vhost=os.getenv('SEFT_RABBITMQ_DEFAULT_VHOST', '%2f')
 )
 

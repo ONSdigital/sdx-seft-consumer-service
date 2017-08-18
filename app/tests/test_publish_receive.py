@@ -2,28 +2,42 @@ import base64
 import filecmp
 import json
 import logging
-from os import listdir
-from os.path import isfile, join
 import time
 import unittest
 import uuid
+from os import listdir
+from os.path import isfile, join
 from threading import Thread
 
+import pika
 from pyftpdlib.authorizers import DummyAuthorizer
 from pyftpdlib.filesystems import UnixFilesystem
 from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import ThreadedFTPServer
+from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore
+from sdc.rabbit.publisher import QueuePublisher
 import tornado
+import yaml
 
 from app import settings
 from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER
-from sdc.crypto.key_store import KeyStore
-from sdc.crypto.encrypter import encrypt
-from sdc.rabbit.publisher import QueuePublisher
 from app.tests import TEST_FILES_PATH
-import yaml
 
 logger = logging.getLogger(__name__)
+
+
+def rabbit_running():
+    try:
+        connection = pika.BlockingConnection(pika.URLParameters(settings.RABBIT_URL))
+        connection.channel()
+        print("Rabbit Running")
+        return True
+    except pika.exceptions.AMQPError:
+        print("Rabbit Not Running")
+        return False
+
+RABBIT_RUNNING = rabbit_running()
 
 
 class FTPThread(Thread):
@@ -79,7 +93,7 @@ class EndToEndTest(unittest.TestCase):
 
     This test requires a rabbit mq server to be running locally with the default settings
     '''
-    @unittest.skip("This test needs a locally running rabbit mq")
+    @unittest.skipIf(not rabbit_running(), "This test needs a locally running rabbit mq")
     def test_end_to_end(self):
         consumer_thread = ConsumerThread(self.sdx_keys)
         consumer_thread.start()

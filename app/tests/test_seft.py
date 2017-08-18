@@ -5,13 +5,13 @@ import unittest
 from os import listdir
 from os.path import isfile, join
 
+from sdc.crypto.decrypter import decrypt
+from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore
+import yaml
+
 from app.main import KEY_PURPOSE_CONSUMER
 from app.tests import TEST_FILES_PATH, TEST_FILES_RECOVERED_PATH
-from sdc.crypto.key_store import KeyStore
-from sdc.crypto.encrypter import encrypt
-from sdc.crypto.decrypter import decrypt
-
-import yaml
 
 
 class SeftTests(unittest.TestCase):

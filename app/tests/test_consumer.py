@@ -3,13 +3,14 @@ import json
 import unittest
 import uuid
 from os.path import join
-from sdc.rabbit.exceptions import QuarantinableError
-from sdc.crypto.key_store import KeyStore
+
 from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore
+from sdc.rabbit.exceptions import QuarantinableError
+import yaml
 
 from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER
 from app.tests import TEST_FILES_PATH
-import yaml
 
 
 class ConsumerTests(unittest.TestCase):
