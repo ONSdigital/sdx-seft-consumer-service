@@ -3,53 +3,47 @@ import json
 import unittest
 import uuid
 from os.path import join
+
+from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore
 from sdc.rabbit.exceptions import QuarantinableError
+import yaml
 
-
-from app.main import SeftConsumer
+from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER
 from app.tests import TEST_FILES_PATH
-from app.tests import test_settings
-from app.tests.encrypter import Encrypter
 
 
 class ConsumerTests(unittest.TestCase):
 
-    def test_on_message_fails_with_empty_filename(self):
-        consumer = SeftConsumer()
+    def setUp(self):
+        with open("./sdx_test_keys/keys.yml") as file:
+            self.sdx_keys = yaml.safe_load(file)
+        with open("./ras_test_keys/keys.yml") as file:
+            self.ras_keys = yaml.safe_load(file)
+        self.ras_key_store = KeyStore(self.ras_keys)
+        self.consumer = SeftConsumer(self.sdx_keys)
 
+    def test_on_message_fails_with_empty_filename(self):
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
             payload = '{"filename":"", "file":"' + encoded_contents.decode() + '"}'
 
-        encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
-                              test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
-
         payload_as_json = json.loads(payload)
-        encrypted_jwt = encrypter.encrypt(payload_as_json)
-        jwt = encrypted_jwt.decode("utf-8")
-
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
         with self.assertRaises(QuarantinableError):
-            consumer.process(jwt, uuid.uuid4())
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_empty_file_contents(self):
-        consumer = SeftConsumer()
-
         payload = '{"filename":"test", "file":""}'
 
-        encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
-                              test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
-
         payload_as_json = json.loads(payload)
-        encrypted_jwt = encrypter.encrypt(payload_as_json)
-        jwt = encrypted_jwt.decode("utf-8")
-
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
         with self.assertRaises(QuarantinableError):
-            consumer.process(jwt, uuid.uuid4())
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_filename(self):
-        consumer = SeftConsumer()
 
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -57,27 +51,15 @@ class ConsumerTests(unittest.TestCase):
 
             payload = '{"file":"' + encoded_contents.decode() + '"}'
 
-        encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
-                              test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
-
         payload_as_json = json.loads(payload)
-        encrypted_jwt = encrypter.encrypt(payload_as_json)
-        jwt = encrypted_jwt.decode("utf-8")
-
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
         with self.assertRaises(QuarantinableError):
-            consumer.process(jwt, uuid.uuid4())
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_file_contents(self):
-        consumer = SeftConsumer()
-
         payload = '{"filename":"test"}'
 
-        encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
-                              test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
-
         payload_as_json = json.loads(payload)
-        encrypted_jwt = encrypter.encrypt(payload_as_json)
-        jwt = encrypted_jwt.decode("utf-8")
-
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
         with self.assertRaises(QuarantinableError):
-            consumer.process(jwt, uuid.uuid4())
+            self.consumer.process(encrypted_jwt, uuid.uuid4())

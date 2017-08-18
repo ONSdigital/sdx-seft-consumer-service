@@ -5,7 +5,6 @@ python:
     - "3.4"
 
 install:
-    - make clean
     - make build
     - pip install codecov
     - pip install flake8

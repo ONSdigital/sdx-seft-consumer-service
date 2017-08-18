@@ -1,15 +1,20 @@
 import base64
 
+from sdc.crypto.decrypter import decrypt
+from sdc.crypto.exceptions import CryptoError, InvalidTokenException
+from sdc.crypto.key_store import KeyStore, validate_required_keys
+from sdc.rabbit.consumers import MessageConsumer
+from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.rabbit.publisher import QueuePublisher
+import yaml
+
 from app import create_and_wrap_logger
 from app import settings
-from app.decrypter import Decrypter, DecryptError
 from app.sdxftp import SDXFTP
-from sdc.rabbit.publisher import QueuePublisher
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
-
-from sdc.rabbit.consumers import MessageConsumer
 
 logger = create_and_wrap_logger(__name__)
+
+KEY_PURPOSE_CONSUMER = "inbound"
 
 
 class ConsumerError(Exception):
@@ -17,9 +22,9 @@ class ConsumerError(Exception):
 
 
 class SeftConsumer:
-    def __init__(self):
-        self._decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
-                                    settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
+    def __init__(self, keys):
+        self.key_store = KeyStore(keys)
+
         self._ftp = SDXFTP(logger,
                            settings.FTP_HOST,
                            settings.FTP_USER,
@@ -79,8 +84,8 @@ class SeftConsumer:
 
     def _decrypt(self, encrypted_jwt, tx_id):
         try:
-            return self._decrypter.decrypt(encrypted_jwt)
-        except (DecryptError, ValueError) as e:
+            return decrypt(encrypted_jwt, self.key_store, KEY_PURPOSE_CONSUMER)
+        except (InvalidTokenException, ValueError) as e:
             logger.error("Bad decrypt",
                          action="quarantined",
                          exception=e,
@@ -103,10 +108,16 @@ class SeftConsumer:
 def main():
     logger.debug("Starting SEFT consumer service")
 
-    seft_consumer = SeftConsumer()
+    with open(settings.SDX_KEYS_FILE) as file:
+            keys = yaml.safe_load(file)
 
     try:
+        validate_required_keys(keys, KEY_PURPOSE_CONSUMER)
+        seft_consumer = SeftConsumer(keys)
         seft_consumer.run()
+
+    except CryptoError as e:
+        logger.critical("Unable to find valid keys", error=e)
     except KeyboardInterrupt:
         logger.debug("SEFT consumer service stopping")
         seft_consumer.stop()
