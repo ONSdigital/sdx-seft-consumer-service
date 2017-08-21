@@ -24,38 +24,31 @@ class ConsumerError(Exception):
 
 
 class SeftConsumer:
-    def __init__(self, keys):
-        self.key_store = KeyStore(keys)
 
-        self._ftp = SDXFTP(logger,
-                           settings.FTP_HOST,
-                           settings.FTP_USER,
-                           settings.FTP_PASS,
-                           settings.FTP_PORT)
-
-        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS, queue=settings.RABBIT_QUARANTINE_QUEUE)
-        self.consumer = MessageConsumer(durable_queue=True, exchange=settings.RABBIT_EXCHANGE, exchange_type="topic",
-                                        rabbit_queue=settings.RABBIT_QUEUE,
-                                        rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
-                                        process=self.process)
-
-    def process(self, encrypted_jwt, tx_id=None):
-
-        logger.debug("Message Received", tx_id=tx_id)
-
+    @staticmethod
+    def extract_file(decrypted_payload, tx_id):
         try:
-            decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
+            file_contents = decrypted_payload['file']
+            file_name = decrypted_payload['filename']
+            case_id = decrypted_payload['case_id']
+            if not file_name or not file_contents or not case_id:
+                logger.error("Empty claims in message",
+                             file_name=file_name,
+                             file_contents="Encoded data" if file_contents else file_contents)
+                raise ConsumerError()
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            decoded_contents = base64.b64decode(file_contents)
+            return decoded_contents, file_name, case_id
+        except (KeyError, ConsumerError) as e:
+            logger.error("Required claims missing quarantining message",
+                         exception=e,
+                         keys=decrypted_payload.keys(),
+                         action="quarantined",
+                         tx_id=tx_id)
+            raise QuarantinableError()
 
-            decoded_contents, file_name, case_id = self._extract_file(decrypted_payload, tx_id)
-
-            self._send_receipt(case_id, tx_id)
-
-            self._send_to_ftp(decoded_contents, file_name, tx_id)
-
-        except ConsumerError:
-            logger.error("Unable to process message", tx_id=tx_id)
-
-    def _send_receipt(self, case_id, tx_id):
+    @staticmethod
+    def send_receipt(case_id, tx_id):
         request_url = RM_SDX_GATEWAY_URL
 
         r = None
@@ -78,6 +71,37 @@ class SeftConsumer:
             logger.error("Service error", request_url=request_url, tx_id=tx_id)
             raise RetryableError
 
+    def __init__(self, keys):
+        self.key_store = KeyStore(keys)
+
+        self._ftp = SDXFTP(logger,
+                           settings.FTP_HOST,
+                           settings.FTP_USER,
+                           settings.FTP_PASS,
+                           settings.FTP_PORT)
+
+        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS, queue=settings.RABBIT_QUARANTINE_QUEUE)
+        self.consumer = MessageConsumer(durable_queue=True, exchange=settings.RABBIT_EXCHANGE, exchange_type="topic",
+                                        rabbit_queue=settings.RABBIT_QUEUE,
+                                        rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
+                                        process=self.process)
+
+    def process(self, encrypted_jwt, tx_id=None):
+
+        logger.debug("Message Received", tx_id=tx_id)
+
+        try:
+            decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
+
+            decoded_contents, file_name, case_id = self.extract_file(decrypted_payload, tx_id)
+
+            self.send_receipt(case_id, tx_id)
+
+            self._send_to_ftp(decoded_contents, file_name, tx_id)
+
+        except ConsumerError:
+            logger.error("Unable to process message", tx_id=tx_id)
+
     def _send_to_ftp(self, decoded_contents, file_name, tx_id):
         try:
             self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
@@ -88,27 +112,6 @@ class SeftConsumer:
                          exception=e,
                          tx_id=tx_id)
             raise RetryableError()
-
-    def _extract_file(self, decrypted_payload, tx_id):
-        try:
-            file_contents = decrypted_payload['file']
-            file_name = decrypted_payload['filename']
-            case_id = decrypted_payload['case_id']
-            if not file_name or not file_contents or not case_id:
-                logger.error("Empty claims in message",
-                             file_name=file_name,
-                             file_contents="Encoded data" if file_contents else file_contents)
-                raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
-            decoded_contents = base64.b64decode(file_contents)
-            return decoded_contents, file_name, case_id
-        except (KeyError, ConsumerError) as e:
-            logger.error("Required claims missing quarantining message",
-                         exception=e,
-                         keys=decrypted_payload.keys(),
-                         action="quarantined",
-                         tx_id=tx_id)
-            raise QuarantinableError()
 
     def _decrypt(self, encrypted_jwt, tx_id):
         try:
