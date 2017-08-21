@@ -25,6 +25,3 @@ class TestHealthCheck(unittest.TestCase):
         set_health = SetHealth()
         self.assertEqual(set_health.rabbit_status, True)
         self.assertEqual(set_health.ftp_status, True)
-
-
-
