@@ -26,6 +26,8 @@ HEALTHCHECK_DELAY_SECONDS = settings.HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
 
+KEY_PURPOSE_CONSUMER = "inbound"
+
 
 class ConsumerError(Exception):
     pass
