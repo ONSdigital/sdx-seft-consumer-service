@@ -1,7 +1,5 @@
 sudo: required
 language: python
-services:
-    - rabbitmq
 python:
     - "3.6"
     - "3.5"
