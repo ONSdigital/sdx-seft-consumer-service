@@ -20,7 +20,8 @@ def rabbit_running():
 class TestHealthCheck(unittest.TestCase):
 
     @unittest.skipIf(not rabbit_running(), "This test requires a locally running rabbitmq")
-    def test_rabbit_mq_health_check(self):
+    @patch.object(SDXFTP, '_connect')
+    def test_rabbit_mq_health_check(self, mock_conn):
         set_health = SetHealth()
         self.assertEqual(set_health.rabbit_status, True)
 
