@@ -24,8 +24,7 @@ class TestHealthCheck(unittest.TestCase):
     def test_rabbit_mq_health_check(self, mock_conn):
         set_health = SetHealth()
         self.assertEqual(set_health.rabbit_status, True)
-
-    @patch.object(SDXFTP, '_connect')
-    def test_ftp_healthcheck_success(self, mock_conn):
-        set_health = SetHealth()
         self.assertEqual(set_health.ftp_status, True)
+
+
+
