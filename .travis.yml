@@ -5,10 +5,6 @@ python:
     - "3.5"
     - "3.4"
 
-before_script:
-    - sudo rabbitmqctl add_user monitor monitor
-    - sudo rabbitmqctl set_user_tags monitor monitoring
-    - sudo rabbitmqctl set_permissions -p / monitor "^monitor-.*" ".*" ".*"
 install:
     - make build
     - pip install codecov
