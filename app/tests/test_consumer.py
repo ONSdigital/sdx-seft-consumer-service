@@ -82,7 +82,6 @@ class ConsumerTests(unittest.TestCase):
             self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_case_id(self):
-
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
@@ -108,6 +107,7 @@ class ConsumerTests(unittest.TestCase):
 
         with self.assertRaises(QuarantinableError):
             self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
+
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
@@ -117,6 +117,7 @@ class ConsumerTests(unittest.TestCase):
 
         with self.assertRaises(RetryableError):
             self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
+
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
