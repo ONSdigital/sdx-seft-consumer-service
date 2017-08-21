@@ -5,10 +5,12 @@ import unittest
 from os import listdir
 from os.path import isfile, join
 
-from app import settings
-from app.decrypter import Decrypter
-from app.tests import test_settings
-from app.tests.encrypter import Encrypter
+from sdc.crypto.decrypter import decrypt
+from sdc.crypto.encrypter import encrypt
+from sdc.crypto.key_store import KeyStore
+import yaml
+
+from app.main import KEY_PURPOSE_CONSUMER
 from app.tests import TEST_FILES_PATH, TEST_FILES_RECOVERED_PATH
 
 
@@ -17,6 +19,14 @@ class SeftTests(unittest.TestCase):
     Loops through all files in ./test_files puts them throught the encryption and decryption
     process and make sure the outputted files in ./seft_files match
     '''
+
+    def setUp(self):
+        with open("./sdx_test_keys/keys.yml") as file:
+            self.sdx_keys = yaml.safe_load(file)
+        with open("./ras_test_keys/keys.yml") as file:
+            self.ras_keys = yaml.safe_load(file)
+        self.ras_key_store = KeyStore(self.ras_keys)
+        self.sdx_key_store = KeyStore(self.sdx_keys)
 
     def test_encrypt_transfer_decrypt(self):
         files = [f for f in listdir(TEST_FILES_PATH) if isfile(join(TEST_FILES_PATH, f))]
@@ -27,16 +37,11 @@ class SeftTests(unittest.TestCase):
                 encoded_contents = base64.b64encode(contents)
 
                 payload = '{"file":"' + encoded_contents.decode() + '"}'
-                encrypter = Encrypter(test_settings.SDX_SEFT_CONSUMER_PUBLIC_KEY,
-                                      test_settings.RAS_SEFT_CONSUMER_PRIVATE_KEY)
 
                 payload_as_json = json.loads(payload)
-                jwt = encrypter.encrypt(payload_as_json)
+                jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
 
-                decrypter = Decrypter(settings.RAS_SEFT_CONSUMER_PUBLIC_KEY,
-                                      settings.SDX_SEFT_CONSUMER_PRIVATE_KEY)
-
-                decrypted_payload = decrypter.decrypt(jwt.decode())
+                decrypted_payload = decrypt(jwt, self.sdx_key_store, KEY_PURPOSE_CONSUMER)
 
                 file_contents = decrypted_payload.get("file")
                 decoded_contents = base64.b64decode(file_contents)
