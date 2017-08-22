@@ -97,7 +97,7 @@ class ConsumerTests(unittest.TestCase):
     def test_send_receipt_201(self):
 
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'ok'}, status=201)
-        self.assertIsNone(self.consumer.send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None))
+        self.assertIsNone(self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None))
         self.assertEqual(len(responses.calls), 1)
 
     @responses.activate
@@ -106,7 +106,7 @@ class ConsumerTests(unittest.TestCase):
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'client error'}, status=400)
 
         with self.assertRaises(QuarantinableError):
-            self.consumer.send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
+            self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
 
         self.assertEqual(len(responses.calls), 1)
 
@@ -116,7 +116,7 @@ class ConsumerTests(unittest.TestCase):
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'server error'}, status=500)
 
         with self.assertRaises(RetryableError):
-            self.consumer.send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
+            self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
 
         self.assertEqual(len(responses.calls), 1)
 
@@ -127,6 +127,6 @@ class ConsumerTests(unittest.TestCase):
 
         with self.assertRaises(RetryableError):
             with self.assertLogs(level="ERROR") as cm:
-                self.consumer.send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
+                self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
 
         self.assertIn("Max retries exceeded (5)", cm[0][0].message)

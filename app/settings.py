@@ -1,7 +1,4 @@
 import os
-import requests
-from requests.packages.urllib3.util.retry import Retry
-from requests.adapters import HTTPAdapter
 
 
 def get_key(key_name):
@@ -37,7 +34,5 @@ FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 SDX_KEYS_FILE = os.getenv('SDX_KEYS_FILE', 'keys.yml')
 
 # Configure the number of retries attempted before failing call
-session = requests.Session()
-retries = Retry(total=5, backoff_factor=0.1)
-session.mount('http://', HTTPAdapter(max_retries=retries))
-session.mount('https://', HTTPAdapter(max_retries=retries))
+TOTAL_RETRIES = 5
+BACKOFF_FACTOR = 0.1

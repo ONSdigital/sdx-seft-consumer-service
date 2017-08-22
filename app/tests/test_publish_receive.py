@@ -65,7 +65,7 @@ class ConsumerThread(Thread):
     def __init__(self, keys):
         super().__init__()
         self._consumer = SeftConsumer(keys)
-        self._consumer.send_receipt = MagicMock(return_value=None)
+        self._consumer._send_receipt = MagicMock(return_value=None)
 
     def run(self):
         self._consumer.run()
