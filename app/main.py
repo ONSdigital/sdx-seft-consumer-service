@@ -1,16 +1,21 @@
 import base64
 
+import requests
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3 import Retry
+from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit.consumers import MessageConsumer
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.rabbit.consumers import MessageConsumer
 import yaml
 
 from app import create_and_wrap_logger
 from app import settings
 from app.sdxftp import SDXFTP
+from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
 
 logger = create_and_wrap_logger(__name__)
 
@@ -22,6 +27,29 @@ class ConsumerError(Exception):
 
 
 class SeftConsumer:
+
+    @staticmethod
+    def extract_file(decrypted_payload, tx_id):
+        try:
+            file_contents = decrypted_payload['file']
+            file_name = decrypted_payload['filename']
+            case_id = decrypted_payload['case_id']
+            if not file_name or not file_contents or not case_id:
+                logger.error("Empty claims in message",
+                             file_name=file_name,
+                             file_contents="Encoded data" if file_contents else file_contents)
+                raise ConsumerError()
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            decoded_contents = base64.b64decode(file_contents)
+            return decoded_contents, file_name, case_id
+        except (KeyError, ConsumerError) as e:
+            logger.error("Required claims missing",
+                         exception=e,
+                         keys=decrypted_payload.keys(),
+                         action="quarantining",
+                         tx_id=tx_id)
+            raise QuarantinableError()
+
     def __init__(self, keys):
         self.key_store = KeyStore(keys)
 
@@ -36,6 +64,10 @@ class SeftConsumer:
                                         rabbit_queue=settings.RABBIT_QUEUE,
                                         rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
                                         process=self.process)
+        self.session = requests.Session()
+        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES, backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
+        self.session.mount('http://', HTTPAdapter(max_retries=retries))
+        self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
     def process(self, encrypted_jwt, tx_id=None):
 
@@ -44,7 +76,9 @@ class SeftConsumer:
         try:
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
-            decoded_contents, file_name = self._extract_file(decrypted_payload, tx_id)
+            decoded_contents, file_name, case_id = self.extract_file(decrypted_payload, tx_id)
+
+            self._send_receipt(case_id, tx_id)
 
             self._send_to_ftp(decoded_contents, file_name, tx_id)
 
@@ -62,32 +96,12 @@ class SeftConsumer:
                          tx_id=tx_id)
             raise RetryableError()
 
-    def _extract_file(self, decrypted_payload, tx_id):
-        try:
-            file_contents = decrypted_payload['file']
-            file_name = decrypted_payload['filename']
-            if not file_name or not file_contents:
-                logger.error("Empty claims in message",
-                             file_name=file_name,
-                             file_contents="Encoded data" if file_contents else file_contents)
-                raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
-            decoded_contents = base64.b64decode(file_contents)
-            return decoded_contents, file_name
-        except (KeyError, ConsumerError) as e:
-            logger.error("Required claims missing quarantining message",
-                         exception=e,
-                         keys=decrypted_payload.keys(),
-                         action="quarantined",
-                         tx_id=tx_id)
-            raise QuarantinableError()
-
     def _decrypt(self, encrypted_jwt, tx_id):
         try:
             return decrypt(encrypted_jwt, self.key_store, KEY_PURPOSE_CONSUMER)
         except (InvalidTokenException, ValueError) as e:
             logger.error("Bad decrypt",
-                         action="quarantined",
+                         action="quarantining",
                          exception=e,
                          tx_id=tx_id)
             raise QuarantinableError()
@@ -97,6 +111,29 @@ class SeftConsumer:
                          exception=e,
                          tx_id=tx_id)
             raise QuarantinableError()
+
+    def _send_receipt(self, case_id, tx_id):
+        request_url = RM_SDX_GATEWAY_URL
+
+        r = None
+
+        try:
+            r = self.session.post(request_url, json={'caseId': case_id})
+        except MaxRetryError:
+            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id)
+            raise RetryableError
+
+        if r.status_code == 200 or r.status_code == 201:
+            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id)
+            return
+
+        elif 400 <= r.status_code < 500:
+            logger.error("RM sdx gateway returned client error", request_url=request_url, tx_id=tx_id)
+            raise QuarantinableError
+
+        else:
+            logger.error("Service error", request_url=request_url, tx_id=tx_id)
+            raise RetryableError
 
     def run(self):
         self.consumer.run()

@@ -2,4 +2,5 @@
   - Initial version of the SEFT publisher service
   - Namespace config
   - FTP port must be an int
-  - Updated to use SDC crypto library
+  - Update to use SDC crypto library
+  - Add consumer receipting
