@@ -8,6 +8,7 @@ import uuid
 from os import listdir
 from os.path import isfile, join
 from threading import Thread
+from unittest.mock import MagicMock
 
 import pika
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -31,10 +32,8 @@ def rabbit_running():
     try:
         connection = pika.BlockingConnection(pika.URLParameters(settings.RABBIT_URL))
         connection.channel()
-        print("Rabbit Running")
         return True
     except pika.exceptions.AMQPError:
-        print("Rabbit Not Running")
         return False
 
 
@@ -66,6 +65,7 @@ class ConsumerThread(Thread):
     def __init__(self, keys):
         super().__init__()
         self._consumer = SeftConsumer(keys)
+        self._consumer._send_receipt = MagicMock(return_value=None)
 
     def run(self):
         self._consumer.run()
@@ -104,7 +104,7 @@ class EndToEndTest(unittest.TestCase):
                 contents = fb.read()
                 encoded_contents = base64.b64encode(contents)
 
-                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '"}'
+                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
 
             payload_as_json = json.loads(payload)
             jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)

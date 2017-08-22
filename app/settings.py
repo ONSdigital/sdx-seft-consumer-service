@@ -9,6 +9,8 @@ def get_key(key_name):
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 
+RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
+
 RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
     port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
@@ -30,3 +32,7 @@ FTP_PASS = os.getenv('SEFT_FTP_PASS', 'ons')
 FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 
 SDX_KEYS_FILE = os.getenv('SDX_KEYS_FILE', 'keys.yml')
+
+# Configure the number of retries attempted before failing call
+SERVICE_REQUEST_TOTAL_RETRIES = 5
+SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
