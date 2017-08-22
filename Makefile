@@ -1,11 +1,11 @@
 
-.PHONY: clean  build test start dev
+.PHONY: build test start dev
 
 build:
-	pip install -r requirements.txt
+	pip install --require-hashes -r requirements.txt
 
 dev:
-	pip install -r requirements.txt
+	pip install --require-hashes -r requirements.txt
 
 test:
 	pip install -r test_requirements.txt
