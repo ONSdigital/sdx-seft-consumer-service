@@ -15,7 +15,7 @@ import yaml
 from app import create_and_wrap_logger
 from app import settings
 from app.sdxftp import SDXFTP
-from app.settings import TOTAL_RETRIES, BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
+from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
 
 logger = create_and_wrap_logger(__name__)
 
@@ -43,10 +43,10 @@ class SeftConsumer:
             decoded_contents = base64.b64decode(file_contents)
             return decoded_contents, file_name, case_id
         except (KeyError, ConsumerError) as e:
-            logger.error("Required claims missing quarantining message",
+            logger.error("Required claims missing",
                          exception=e,
                          keys=decrypted_payload.keys(),
-                         action="quarantined",
+                         action="quarantining",
                          tx_id=tx_id)
             raise QuarantinableError()
 
@@ -65,7 +65,7 @@ class SeftConsumer:
                                         rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
                                         process=self.process)
         self.session = requests.Session()
-        retries = Retry(total=TOTAL_RETRIES, backoff_factor=BACKOFF_FACTOR)
+        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES, backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
@@ -101,7 +101,7 @@ class SeftConsumer:
             return decrypt(encrypted_jwt, self.key_store, KEY_PURPOSE_CONSUMER)
         except (InvalidTokenException, ValueError) as e:
             logger.error("Bad decrypt",
-                         action="quarantined",
+                         action="quarantining",
                          exception=e,
                          tx_id=tx_id)
             raise QuarantinableError()

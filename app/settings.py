@@ -34,5 +34,5 @@ FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 SDX_KEYS_FILE = os.getenv('SDX_KEYS_FILE', 'keys.yml')
 
 # Configure the number of retries attempted before failing call
-TOTAL_RETRIES = 5
-BACKOFF_FACTOR = 0.1
+SERVICE_REQUEST_TOTAL_RETRIES = 5
+SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
