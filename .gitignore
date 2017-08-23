@@ -25,3 +25,10 @@ tests/__pycache/
 
 .xlsx
 .xls
+
+# Remove test files
+
+ftp/*.xls
+ftp/*.xlsx
+seft_files/*.xls
+seft_files/*.xlsx

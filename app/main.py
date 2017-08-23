@@ -1,4 +1,5 @@
 import base64
+import json
 
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
@@ -13,12 +14,10 @@ from app import settings
 from app.sdxftp import SDXFTP
 from ftplib import Error
 
-
+import tornado.ioloop
 import tornado.web
 import tornado.httpserver
-from tornado.httpclient import HTTPClient, HTTPError
-from threading import Thread, Event
-import json
+from tornado.httpclient import AsyncHTTPClient, HTTPError
 import os
 
 logger = create_and_wrap_logger(__name__)
@@ -123,7 +122,7 @@ class SeftConsumer:
         self.consumer.stop()
 
 
-class SetHealth:
+class GetHealth:
     """This handles all the healthcheck functionality for the application.
 
        The status of the application is determined by the rabbitmq health and ftp health.
@@ -133,8 +132,6 @@ class SetHealth:
        app status as well as the dependencies of rabbitmq and ftp."""
 
     def __init__(self):
-        self.stop_flag = Event()
-        self.http_client = HTTPClient()
         self.ftp = SDXFTP(logger,
                           settings.FTP_HOST,
                           settings.FTP_USER,
@@ -142,36 +139,43 @@ class SetHealth:
                           settings.FTP_PORT,
                           )
         self.conn = self.ftp._connect()
-        self.set_ftp_status()
-        self.set_rabbit_status()
+        self.rabbit_status = False
+        self.ftp_status = False
+        self.get_health()
 
-    def set_rabbit_status(self):
+    @tornado.gen.coroutine
+    def get_rabbit_status(self):
         try:
-            resp = self.http_client.fetch(settings.RABBIT_HEALTHCHECK_URL,
-                                          auth_username=settings.SEFT_RABBITMQ_MONITORING_USER,
-                                          auth_password=settings.SEFT_RABBITMQ_MONITORING_PASS)
-            body = json.loads(resp.body.decode('utf8'))
-            status = body.get('status')
-            self.rabbit_status = False if not status else True
+            response = yield AsyncHTTPClient().fetch(settings.RABBIT_HEALTHCHECK_URL)
+
+            self.rabbit_status_callback(response)
+
         except HTTPError as e:
-            logger.error("Error receiving rabbit health " + str(e))
+            logger.error("Error receiving rabbit health ", error=str(e))
+            raise tornado.gen.Return(None)
+        except Exception as e:
+            logger.error("Unknown exception occured when receiving rabbit health", error=str(e))
+            raise tornado.gen.Return(None)
+
+        return
+
+    def rabbit_status_callback(self, response):
+        logger.info(response.body)
+        if json.loads(response.body.decode())['status'] == "ok":
+            logger.info('Setting status now')
+            self.rabbit_status = True
+        else:
+            self.rabbit_status = False
 
     def set_ftp_status(self):
         try:
             self.conn.voidcmd("NOOP")
             self.ftp_status = True
         except Error as e:
-            logger.error("FTP error raised" + str(e))
-
-    def start(self):
-        thread = TimerThread(self.stop_flag, self.get_health())
-        thread.run()
-
-    def stop(self):
-        self.stop_flag.set()
+            logger.error("FTP error raised", error=str(e))
 
     def get_health(self):
-        self.set_rabbit_status()
+        self.get_rabbit_status()
         self.set_ftp_status()
 
         if self.rabbit_status and self.ftp_status:
@@ -183,24 +187,12 @@ class SetHealth:
 class HealthCheck(tornado.web.RequestHandler):
 
     def initialize(self):
-        self.set_health = SetHealth()
+        self.set_health = GetHealth()
 
     def get(self):
         self.write({"status": self.set_health.app_health,
                     "dependencies": {"rabbitmq": self.set_health.rabbit_status,
                                      "ftp": self.set_health.ftp_status}})
-
-
-class TimerThread(Thread):
-
-    def __init__(self, event, p):
-        Thread.__init__(self)
-        self.stopped = event
-        self.p = p
-
-    def run(self):
-        while not self.stopped.wait(HEALTHCHECK_DELAY_SECONDS):
-            self.p.__call__()
 
 
 def make_app():
@@ -212,7 +204,6 @@ def make_app():
 def main():
     logger.debug("Starting SEFT consumer service")
 
-    set_health = SetHealth()
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)
     server.bind(int(os.getenv("PORT", '8080')))
@@ -222,17 +213,31 @@ def main():
             keys = yaml.safe_load(file)
 
     try:
+
+        # Create the scheduled health task
+
+        task = GetHealth()
+        sched = tornado.ioloop.PeriodicCallback(
+            task.get_health,
+            HEALTHCHECK_DELAY_SECONDS,
+        )
+
+        sched.start()
+        logger.info("Scheduled healthcheck started.")
+
+        # Get initial health
+        loop = tornado.ioloop.IOLoop.current()
+        loop.call_later(HEALTHCHECK_DELAY_SECONDS, task.get_health)
+
         validate_required_keys(keys, KEY_PURPOSE_CONSUMER)
         seft_consumer = SeftConsumer(keys)
         seft_consumer.run()
-        set_health.start()
 
     except CryptoError as e:
         logger.critical("Unable to find valid keys", error=e)
     except KeyboardInterrupt:
         logger.debug("SEFT consumer service stopping")
         seft_consumer.stop()
-        set_health.stop()
         logger.debug("SEFT consumer service stopped")
 
 
