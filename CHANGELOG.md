@@ -1,6 +1,6 @@
 ### Unreleased
-  - Initial version of the SEFT publisher service
+  - Initial release
   - Namespace config
   - FTP port must be an int
-  - Update to use SDC crypto library
-  - Add consumer receipting
+  - Updated to use SDC crypto library
+  - Ensure integrity and version of library dependencies
