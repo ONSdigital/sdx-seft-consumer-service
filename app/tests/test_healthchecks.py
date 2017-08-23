@@ -43,19 +43,3 @@ class HealthCheckTest(testing.AsyncTestCase):
         # Set App Health
         self.get_health.get_health()
         self.assertEqual(self.get_health.app_health, True)
-
-    @unittest.skipIf(rabbit_running(), 'Requires no rabbit server to be running')
-    @testing.gen_test(timeout=10)
-    def test_get_rabbit_status_fails(self):
-        yield self.get_health.get_rabbit_status()
-        self.assertEqual(self.get_health.rabbit_status, False)
-
-    @unittest.skipIf(rabbit_running(), 'Requires no locally running rabbit server')
-    @testing.gen_test(timeout=10)
-    def test_get_health_app_health_false(self):
-        # Set rabbit status to true
-        yield self.get_health.get_rabbit_status()
-
-        # Set App Health
-        self.get_health.get_health()
-        self.assertEqual(self.get_health.app_health, False)
