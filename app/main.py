@@ -145,7 +145,7 @@ class SeftConsumer:
 def main():
     logger.debug("Starting SEFT consumer service")
 
-    with open(settings.SDX_KEYS_FILE) as file:
+    with open(settings.SDX_SEFT_CONSUMER_KEYS_FILE) as file:
             keys = yaml.safe_load(file)
 
     try:
