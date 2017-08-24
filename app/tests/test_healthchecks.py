@@ -24,7 +24,7 @@ def ftp_available():
         _conn.connect(settings.FTP_HOST, settings.FTP_PORT)
         _conn.login(user=settings.FTP_USER, passwd=settings.FTP_PASS)
         return True
-    except Exception as e:
+    except Exception:
         return False
 
 
