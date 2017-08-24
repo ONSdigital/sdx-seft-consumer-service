@@ -211,6 +211,8 @@ class GetHealth:
             self.ftp_status = True
         except Error as e:
             logger.error("FTP error raised", error=str(e))
+        except Exception as e:
+            logger.error("Unknown exception occured when receiving ftp health", error=str(e))
 
     def get_health(self):
         self.get_rabbit_status()
