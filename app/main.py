@@ -28,7 +28,7 @@ import os
 
 
 logger = create_and_wrap_logger(__name__)
-HEALTHCHECK_DELAY_SECONDS = settings.HEALTHCHECK_DELAY
+HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
 
@@ -176,47 +176,51 @@ class GetHealth:
                           settings.FTP_PASS,
                           settings.FTP_PORT,
                           )
-        self.conn = self.ftp._connect()
         self.rabbit_status = False
         self.ftp_status = False
-        self.get_health()
+        self.app_health = False
+        self.determine_health()
 
     @tornado.gen.coroutine
-    def get_rabbit_status(self):
+    def determine_rabbit_status(self):
         try:
             response = yield AsyncHTTPClient().fetch(settings.RABBIT_HEALTHCHECK_URL)
 
             self.rabbit_status_callback(response)
 
         except HTTPError as e:
-            logger.error("Error receiving rabbit health ", error=str(e))
+            logger.error("Error receiving rabbit health ", error=e)
             raise tornado.gen.Return(None)
         except Exception as e:
-            logger.error("Unknown exception occured when receiving rabbit health", error=str(e))
+            logger.error("Unknown exception occurred when receiving rabbit health", error=e)
             raise tornado.gen.Return(None)
-
         return
 
     def rabbit_status_callback(self, response):
-        logger.info(response.body)
-        if json.loads(response.body.decode())['status'] == "ok":
-            logger.info('Setting status now')
-            self.rabbit_status = True
-        else:
-            self.rabbit_status = False
+        self.rabbit_status = False
+        if response:
+            resp = response.body.decode()
+            res = json.loads(resp)
+            status = res.get('status')
+            logger.info("Rabbit MQ health check response {}".format(status))
+            if status == "ok":
+                logger.info('Setting status now')
+                self.rabbit_status = True
 
-    def set_ftp_status(self):
+    def determine_ftp_status(self):
         try:
-            self.conn.voidcmd("NOOP")
-            self.ftp_status = True
+            self.ftp_status = False
+            conn = self.ftp.get_connection()
+            if conn:
+                self.ftp_status = True
         except Error as e:
-            logger.error("FTP error raised", error=str(e))
+            logger.error("FTP error raised", error=e)
         except Exception as e:
-            logger.error("Unknown exception occured when receiving ftp health", error=str(e))
+            logger.error("Unknown exception occurred when receiving ftp health", error=e)
 
-    def get_health(self):
-        self.get_rabbit_status()
-        self.set_ftp_status()
+    def determine_health(self):
+        self.determine_rabbit_status()
+        self.determine_ftp_status()
 
         if self.rabbit_status and self.ftp_status:
             self.app_health = True
@@ -225,6 +229,9 @@ class GetHealth:
 
 
 class HealthCheck(tornado.web.RequestHandler):
+
+    def __init__(self):
+        self.set_health = None
 
     def initialize(self):
         self.set_health = GetHealth()
@@ -258,8 +265,8 @@ def main():
 
         task = GetHealth()
         sched = tornado.ioloop.PeriodicCallback(
-            task.get_health,
-            HEALTHCHECK_DELAY_SECONDS,
+            task.determine_health,
+            HEALTHCHECK_DELAY_MILLISECONDS,
         )
 
         sched.start()
@@ -267,7 +274,7 @@ def main():
 
         # Get initial health
         loop = tornado.ioloop.IOLoop.current()
-        loop.call_later(HEALTHCHECK_DELAY_SECONDS, task.get_health)
+        loop.call_later(HEALTHCHECK_DELAY_MILLISECONDS, task.determine_health)
 
         validate_required_keys(keys, KEY_PURPOSE_CONSUMER)
         seft_consumer = SeftConsumer(keys)

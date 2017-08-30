@@ -8,7 +8,7 @@ def get_key(key_name):
 
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
-HEALTHCHECK_DELAY = os.getenv("HEALTHCHECK_DELAY", 300)
+SEFT_CONSUMER_HEALTHCHECK_DELAY = os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY", 5000)
 
 RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
 

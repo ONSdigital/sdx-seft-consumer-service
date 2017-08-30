@@ -25,7 +25,7 @@ class SDXFTP(object):
         else:
             try:
                 self._conn.voidcmd("NOOP")
-            except IOError:
+            except (IOError, AttributeError):
                 # Bad response so assume connection is dead and attempt
                 # to reopen.
                 self.logger.info("FTP connection no longer alive, re-establishing connection", host=self.host)
