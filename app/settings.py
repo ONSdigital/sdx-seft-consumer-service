@@ -8,6 +8,7 @@ def get_key(key_name):
 
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
+HEALTHCHECK_DELAY = os.getenv("HEALTHCHECK_DELAY", 300)
 
 RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
 
@@ -17,6 +18,16 @@ RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
     password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
     vhost=os.getenv('SEFT_RABBITMQ_DEFAULT_VHOST', '%2f')
+)
+
+SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'monitor')
+SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'monitor')
+
+RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchecks/node".format(
+    user=SEFT_RABBITMQ_MONITORING_USER,
+    passw=SEFT_RABBITMQ_MONITORING_PASS,
+    hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
+    port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
 )
 
 RABBIT_URLS = [RABBIT_URL]
@@ -31,7 +42,7 @@ FTP_USER = os.getenv('SEFT_FTP_USER', 'ons')
 FTP_PASS = os.getenv('SEFT_FTP_PASS', 'ons')
 FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 
-SDX_SEFT_CONSUMER_KEYS_FILE = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', 'keys.yml')
+SDX_KEYS_FILE = os.getenv('SDX_KEYS_FILE', './sdx_test_keys/keys.yml')
 
 # Configure the number of retries attempted before failing call
 SERVICE_REQUEST_TOTAL_RETRIES = 5
