@@ -8,7 +8,7 @@ from structlog.stdlib import filter_by_level, add_log_level
 
 from app import settings
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 __service__ = "sdx-seft-consumer-service"
 
 logger_initial_config(service_name=__service__, log_level=settings.LOGGING_LEVEL)

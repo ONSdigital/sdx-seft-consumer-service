@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.0.0
   - Initial release
   - Namespace config
   - FTP port must be an int
