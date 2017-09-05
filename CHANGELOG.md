@@ -1,4 +1,5 @@
 ### Unreleased
+  - Remove unnecessary code
 
 ### 1.0.0
   - Initial release

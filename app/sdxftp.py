@@ -1,5 +1,4 @@
 import io
-import zipfile
 from ftplib import FTP
 
 
@@ -50,24 +49,3 @@ class SDXFTP(object):
         conn.cwd(folder)
         conn.storbinary('STOR ' + filename, stream)
         self.logger.info("Delivered binary file to FTP", host=self.host, folder=folder, filename=filename)
-
-    def unzip_and_deliver(self, folder, zip_contents):
-        """Unzip and deliver processes a zip file and delivers the unzipped
-        contents to the given folder.
-        """
-        try:
-            z = zipfile.ZipFile(io.BytesIO(zip_contents))
-
-            for filename in z.namelist():
-                if filename.endswith('/'):
-                    continue
-
-                edc_file = z.open(filename)
-                self.deliver_binary(folder, filename, edc_file.read())
-
-            self.logger.info("Successfully delivered zip to FTP", host=self.host)
-            return True
-
-        except (RuntimeError, zipfile.BadZipfile) as e:
-            self.logger.error("Failed to deliver zip to FTP", host=self.host, error=e)
-            return False

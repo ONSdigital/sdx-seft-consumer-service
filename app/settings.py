@@ -1,12 +1,6 @@
 import os
 
 
-def get_key(key_name):
-    key = open(key_name, 'r')
-    contents = key.read()
-    return contents
-
-
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 SEFT_CONSUMER_HEALTHCHECK_DELAY = int(os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY", "5000"))
 
