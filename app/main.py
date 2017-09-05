@@ -131,8 +131,6 @@ class SeftConsumer:
     def _send_receipt(self, case_id, tx_id):
         request_url = RM_SDX_GATEWAY_URL
 
-        r = None
-
         try:
             r = self.session.post(request_url, json={'caseId': case_id})
         except MaxRetryError:
