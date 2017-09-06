@@ -32,8 +32,6 @@ HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
 
-KEY_PURPOSE_CONSUMER = "inbound"
-
 
 class ConsumerError(Exception):
     pass
@@ -130,8 +128,6 @@ class SeftConsumer:
 
     def _send_receipt(self, case_id, tx_id):
         request_url = RM_SDX_GATEWAY_URL
-
-        r = None
 
         try:
             r = self.session.post(request_url, json={'caseId': case_id})
