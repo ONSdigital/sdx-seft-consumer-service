@@ -1,5 +1,6 @@
 ### Unreleased
-  - Remove unnecessary code
+   - Remove JSON logging
+   - Remove unnecessary code
 
 ### 1.0.0
   - Initial release
