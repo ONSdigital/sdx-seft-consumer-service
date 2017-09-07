@@ -249,7 +249,7 @@ def main():
 
     app = make_app()
     server = tornado.httpserver.HTTPServer(app)
-    server.bind(int(os.getenv("PORT", '8080')))
+    server.bind(int(os.getenv("SDX_SEFT_CONSUMER_SERVICE_PORT", '8080')))
     server.start(0)
 
     with open(settings.SDX_SEFT_CONSUMER_KEYS_FILE) as file:
