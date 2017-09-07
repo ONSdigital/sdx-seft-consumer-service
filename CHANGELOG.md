@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.0.1
   - Remove JSON logging
   - Remove unnecessary code
   - Set a listen port from the env var "SEFT_SDX_CONSUMER_SERVICE_PORT", or default to 8080
