@@ -1,12 +1,6 @@
 import os
 
 
-def get_key(key_name):
-    key = open(key_name, 'r')
-    contents = key.read()
-    return contents
-
-
 SECURITY_USER_NAME = os.getenv('SEFT_CONSUMER_SECURITY_USER_NAME', 'dummy_user')
 SECURITY_USER_PASSWORD = os.getenv('SEFT_CONSUMER_SECURITY_USER_PASSWORD', 'dummy_password')
 
