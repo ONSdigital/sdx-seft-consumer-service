@@ -108,10 +108,10 @@ class ConsumerTests(unittest.TestCase):
 
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'client error'}, status=400)
 
-        with self.assertRaises(QuarantinableError):
+        with self.assertLogs(level="ERROR") as cm:
             self.consumer._send_receipt(case_id="601c4ee4-83ed-11e7-bb31-be2e44b06b34", tx_id=None)
 
-        self.assertEqual(len(responses.calls), 1)
+        self.assertIn("RM sdx gateway returned client error, unable to receipt", cm[0][0].message)
 
     @responses.activate
     def test_send_receipt_500(self):

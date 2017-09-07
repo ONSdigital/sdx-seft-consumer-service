@@ -17,6 +17,7 @@ from app import create_and_wrap_logger
 from app import settings
 from app.sdxftp import SDXFTP
 from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
+from app.settings import BASIC_AUTH
 
 from ftplib import Error
 
@@ -130,7 +131,7 @@ class SeftConsumer:
         request_url = RM_SDX_GATEWAY_URL
 
         try:
-            r = self.session.post(request_url, json={'caseId': case_id})
+            r = self.session.post(request_url, auth=BASIC_AUTH, json={'caseId': case_id})
         except MaxRetryError:
             logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id)
             raise RetryableError
@@ -140,8 +141,9 @@ class SeftConsumer:
             return
 
         elif 400 <= r.status_code < 500:
-            logger.error("RM sdx gateway returned client error", request_url=request_url, tx_id=tx_id)
-            raise QuarantinableError
+            logger.error("RM sdx gateway returned client error, unable to receipt",
+                         request_url=request_url,
+                         tx_id=tx_id)
 
         else:
             logger.error("Service error", request_url=request_url, tx_id=tx_id)

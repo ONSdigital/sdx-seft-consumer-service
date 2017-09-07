@@ -2,6 +2,7 @@
   - Remove JSON logging
   - Remove unnecessary code
   - Set a listen port from the env var "SEFT_SDX_CONSUMER_SERVICE_PORT", or default to 8080
+  - Add basic auth to RM SDX gateway calls
 
 ### 1.0.0
   - Initial release
