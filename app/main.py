@@ -56,7 +56,7 @@ class SeftConsumer:
             return decoded_contents, file_name, case_id
         except (KeyError, ConsumerError) as e:
             logger.error("Required claims missing",
-                         exception=e,
+                         exception=str(e),
                          keys=decrypted_payload.keys(),
                          action="quarantining",
                          tx_id=tx_id)
@@ -107,7 +107,7 @@ class SeftConsumer:
         except IOError as e:
             logger.error("Unable to deliver to the FTP server",
                          action="nack",
-                         exception=e,
+                         exception=str(e),
                          tx_id=tx_id)
             raise RetryableError()
 
@@ -117,13 +117,13 @@ class SeftConsumer:
         except (InvalidTokenException, ValueError) as e:
             logger.error("Bad decrypt",
                          action="quarantining",
-                         exception=e,
+                         exception=str(e),
                          tx_id=tx_id)
             raise QuarantinableError()
         except Exception as e:
             logger.error("Failed to process",
                          action="retry",
-                         exception=e,
+                         exception=str(e),
                          tx_id=tx_id)
             raise QuarantinableError()
 
@@ -187,10 +187,10 @@ class GetHealth:
             self.rabbit_status_callback(response)
 
         except HTTPError as e:
-            logger.error("Error receiving rabbit health ", error=e)
+            logger.error("Error receiving rabbit health ", error=str(e))
             raise tornado.gen.Return(None)
         except Exception as e:
-            logger.error("Unknown exception occurred when receiving rabbit health", error=e)
+            logger.error("Unknown exception occurred when receiving rabbit health", error=str(e))
             raise tornado.gen.Return(None)
         return
 
@@ -212,9 +212,9 @@ class GetHealth:
             if conn:
                 self.ftp_status = True
         except Error as e:
-            logger.error("FTP error raised", error=e)
+            logger.error("FTP error raised", error=str(e))
         except Exception as e:
-            logger.error("Unknown exception occurred when receiving ftp health", error=e)
+            logger.error("Unknown exception occurred when receiving ftp health", error=str(e))
 
     def determine_health(self):
         self.determine_rabbit_status()
@@ -279,7 +279,7 @@ def main():
         seft_consumer.run()
 
     except CryptoError as e:
-        logger.critical("Unable to find valid keys", error=e)
+        logger.critical("Unable to find valid keys", error=str(e))
     except KeyboardInterrupt:
         logger.debug("SEFT consumer service stopping")
         seft_consumer.stop()
