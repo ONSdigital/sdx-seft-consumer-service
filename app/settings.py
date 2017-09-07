@@ -1,6 +1,16 @@
 import os
 
 
+def get_key(key_name):
+    key = open(key_name, 'r')
+    contents = key.read()
+    return contents
+
+SECURITY_USER_NAME = os.getenv('SEFT_CONSUMER_SECURITY_USER_NAME', 'dummy_user')
+SECURITY_USER_PASSWORD = os.getenv('SEFT_CONSUMER_SECURITY_USER_PASSWORD', 'dummy_password')
+
+BASIC_AUTH = (SECURITY_USER_NAME, SECURITY_USER_PASSWORD)
+
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 SEFT_CONSUMER_HEALTHCHECK_DELAY = int(os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY", "5000"))
 
