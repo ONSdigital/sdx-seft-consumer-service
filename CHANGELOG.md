@@ -1,4 +1,5 @@
 ### Unreleased
+ - Downgrade structlogger to fix issue with tornado
 
 ### 1.0.1
   - Remove JSON logging
