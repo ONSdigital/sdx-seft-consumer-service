@@ -202,7 +202,7 @@ class GetHealth:
             status = res.get('status')
             logger.info("Rabbit MQ health check response {}".format(status))
             if status == "ok":
-                logger.info('Setting status now')
+                logger.info('Rabbit MQ health ok')
                 self.rabbit_status = True
 
     def determine_ftp_status(self):
@@ -210,6 +210,7 @@ class GetHealth:
             self.ftp_status = False
             conn = self.ftp.get_connection()
             if conn:
+                logger.info('FTP health ok')
                 self.ftp_status = True
         except Error as e:
             logger.error("FTP error raised", error=str(e))
