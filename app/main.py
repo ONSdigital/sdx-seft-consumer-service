@@ -143,6 +143,7 @@ class SeftConsumer:
         elif 400 <= r.status_code < 500:
             logger.error("RM sdx gateway returned client error, unable to receipt",
                          request_url=request_url,
+                         status=r.status_code,
                          tx_id=tx_id)
 
         else:
