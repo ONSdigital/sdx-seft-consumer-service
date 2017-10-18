@@ -16,7 +16,7 @@ RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
     port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
     user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
     password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
-    vhost=os.getenv('SEFT_RABBITMQ_DEFAULT_VHOST', '%2f')
+    vhost='%2f'
 )
 
 SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'monitor')
@@ -31,9 +31,9 @@ RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchec
 
 RABBIT_URLS = [RABBIT_URL]
 
-RABBIT_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUEUE", "Seft.Responses")
+RABBIT_QUEUE = "Seft.Responses"
 RABBIT_EXCHANGE = os.getenv('SEFT_RABBITMQ_EXCHANGE', 'message')
-RABBIT_QUARANTINE_QUEUE = os.getenv("SEFT_RABBIT_CONSUMER_QUARANTINE_QUEUE", "Seft.Responses.Quarantine")
+RABBIT_QUARANTINE_QUEUE = "Seft.Responses.Quarantine"
 
 FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
 FTP_PORT = int(os.getenv('SEFT_FTP_PORT', '2021'))
