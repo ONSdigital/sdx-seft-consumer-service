@@ -44,7 +44,6 @@ The main configuration options are listed below:
 | SEFT_RABBITMQ_PORT                    | '5672'                         | Port for rabbit mq 1
 | SEFT_RABBITMQ_PORT2                   | '5672'                         | Port for rabbit mq 2
 | SEFT_CONSUMER_RABBIT_QUEUE            | `Seft.Responses`               | Incoming queue to read from
-| SEFT_RABBIT_EXCHANGE                  | `message`                      | RabbitMQ exchange to use
 | SEFT_CONSUMER_RABBIT_QUARANTINE_QUEUE | `"Seft.Responses.Quarantine"`  | Rabbit quarantine queue
 | SEFT_FTP_HOST                         | `localhost`                    | FTP host
 | SEFT_FTP_PORT                         | `2021`                         | FTP port

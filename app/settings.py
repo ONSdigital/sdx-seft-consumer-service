@@ -32,7 +32,7 @@ RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchec
 RABBIT_URLS = [RABBIT_URL]
 
 RABBIT_QUEUE = "Seft.Responses"
-RABBIT_EXCHANGE = os.getenv('SEFT_RABBITMQ_EXCHANGE', 'message')
+RABBIT_EXCHANGE = 'message'
 RABBIT_QUARANTINE_QUEUE = "Seft.Responses.Quarantine"
 
 FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
