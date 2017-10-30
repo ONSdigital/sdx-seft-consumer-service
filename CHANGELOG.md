@@ -1,5 +1,6 @@
 ### Unreleased
  - Logging improvements
+ - Removed unchanging configurable variables.
 
 ### 1.0.2
  - Downgrade structlogger to fix issue with tornado
