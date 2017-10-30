@@ -1,5 +1,5 @@
 ### Unreleased
- - Logging improvements
+ - Update logging be more explicit and informative
  - Removed unchanging configurable variables.
 
 ### 1.0.2

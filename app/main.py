@@ -1,5 +1,7 @@
 import base64
+from ftplib import Error as FTPException
 import json
+import os
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -11,6 +13,10 @@ from sdc.crypto.key_store import KeyStore, validate_required_keys
 from sdc.rabbit.publisher import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.consumers import MessageConsumer
+from tornado.httpclient import AsyncHTTPClient, HTTPError
+import tornado.httpserver
+import tornado.ioloop
+import tornado.web
 import yaml
 
 from app import create_and_wrap_logger
@@ -18,14 +24,6 @@ from app import settings
 from app.sdxftp import SDXFTP
 from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
 from app.settings import BASIC_AUTH
-
-from ftplib import Error
-
-import tornado.ioloop
-import tornado.web
-import tornado.httpserver
-from tornado.httpclient import AsyncHTTPClient, HTTPError
-import os
 
 
 logger = create_and_wrap_logger(__name__)
@@ -203,7 +201,7 @@ class GetHealth:
             status = res.get('status')
             logger.info("Rabbit MQ health check response {}".format(status))
             if status == "ok":
-                logger.info('Rabbit MQ health ok')
+                logger.info("Checked rabbit health", health="ok")
                 self.rabbit_status = True
 
     def determine_ftp_status(self):
@@ -211,10 +209,10 @@ class GetHealth:
             self.ftp_status = False
             conn = self.ftp.get_connection()
             if conn:
-                logger.info('FTP health ok')
+                logger.info("Checked FTP health", health="ok")
                 self.ftp_status = True
-        except Error as e:
-            logger.error("FTP error raised", error=str(e))
+        except FTPException as e:
+            logger.error("FTP exception raised", error=str(e))
         except Exception as e:
             logger.error("Unknown exception occurred when receiving ftp health", error=str(e))
 
@@ -226,6 +224,8 @@ class GetHealth:
             self.app_health = True
         else:
             self.app_health = False
+
+        logger.info("Checked app health", app=self.app_health, rabbit=self.rabbit_status, ftp=self.ftp_status)
 
 
 class HealthCheck(tornado.web.RequestHandler):
