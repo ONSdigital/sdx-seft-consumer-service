@@ -1,6 +1,3 @@
-sdx-common==0.7.2 \
-    --hash=sha256:1eace2a6dd2b7eef0c052f71a3ddf2e6d81b281c3a31fc9560dbf307e2a0e4cb \
-    --hash=sha256:6afc473b6405a0b66889ec0ccab6ce321c3a638e20bd5f2cbada6561d747ffab
 structlog==16.1.0 \
     --hash=sha256:a8cc45c208c6b251031ec223940552eccd97dbdb322474e0c4ec9e50f76a225a \
     --hash=sha256:b44dfaadcbab84e6bb97bd9b263f61534a79611014679757cd93e2359ee7be01

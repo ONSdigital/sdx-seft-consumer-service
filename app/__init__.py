@@ -1,14 +1,15 @@
 import logging
 
-from sdx.common.logger_config import logger_initial_config
 from structlog import wrap_logger
 
-from app import settings
+import app.settings
 
 __version__ = "1.1.0"
 __service__ = "sdx-seft-consumer-service"
 
-logger_initial_config(service_name=__service__, log_level=settings.LOGGING_LEVEL)
+logging.basicConfig(format=app.settings.LOGGING_FORMAT,
+                    datefmt="%Y-%m-%dT%H:%M:%S",
+                    level=app.settings.LOGGING_LEVEL)
 
 
 def create_and_wrap_logger(logger_name):
