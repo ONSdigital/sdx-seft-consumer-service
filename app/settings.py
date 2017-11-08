@@ -7,6 +7,8 @@ SECURITY_USER_PASSWORD = os.getenv('SEFT_CONSUMER_SECURITY_USER_PASSWORD', 'dumm
 BASIC_AUTH = (SECURITY_USER_NAME, SECURITY_USER_PASSWORD)
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
+LOGGING_FORMAT = "%(asctime)s.%(msecs)06dZ|%(levelname)s: sdx-seft-consumer-service: %(message)s"
+
 SEFT_CONSUMER_HEALTHCHECK_DELAY = int(os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY", "5000"))
 
 RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
