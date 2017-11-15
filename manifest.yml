@@ -1,0 +1,13 @@
+applications:
+- name: sdx-seft-consumer-service
+  buildpack: python_buildpack
+  health-check-type: process
+
+  env:
+    CF_DEPLOYMENT: True
+
+    RABBIT_QUEUE: Seft.Responses
+    RABBIT_QUARANTINE_QUEUE: Seft.Responses.Quarantine
+
+  services:
+   - sdx-rabbit-dev
