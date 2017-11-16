@@ -5,9 +5,14 @@ applications:
 
   env:
     CF_DEPLOYMENT: True
-
-    RABBIT_QUEUE: Seft.Responses
-    RABBIT_QUARANTINE_QUEUE: Seft.Responses.Quarantine
+    SEFT_CONSUMER_HEALTHCHECK_DELAY: 5000
+    RM_SDX_GATEWAY_URL: 'http://localhost:8191/receipts'
+    FTP_HOST: 'localhost'
+    FTP_PORT: 2021
+    FTP_USER: 'ons'
+    FTP_PASS: 'ons'
+    FTP_FOLDER: '.'
+    SDX_SEFT_CONSUMER_KEYS_FILE: './sdx_test_keys/keys.yml'
 
   services:
    - sdx-rabbit-dev
