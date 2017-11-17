@@ -1,4 +1,5 @@
 import os
+import json
 
 
 SECURITY_USER_NAME = os.getenv('SEFT_CONSUMER_SECURITY_USER_NAME', 'dummy_user')
@@ -13,25 +14,8 @@ SEFT_CONSUMER_HEALTHCHECK_DELAY = int(os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
 
-RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
-    hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
-    port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
-    user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
-    password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
-    vhost='%2f'
-)
-
 SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'monitor')
 SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'monitor')
-
-RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchecks/node".format(
-    user=SEFT_RABBITMQ_MONITORING_USER,
-    passw=SEFT_RABBITMQ_MONITORING_PASS,
-    hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
-    port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
-)
-
-RABBIT_URLS = [RABBIT_URL]
 
 RABBIT_QUEUE = "Seft.Responses"
 RABBIT_EXCHANGE = 'message'
@@ -48,3 +32,33 @@ SDX_SEFT_CONSUMER_KEYS_FILE = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './sdx_te
 # Configure the number of retries attempted before failing call
 SERVICE_REQUEST_TOTAL_RETRIES = 5
 SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
+
+
+def parse_vcap_services():
+    vcap_services = os.getenv("VCAP_SERVICES")
+    parsed_vcap_services = json.loads(vcap_services)
+    rabbit_config = parsed_vcap_services.get('rabbitmq')
+    rabbit_url = rabbit_config[0].get('credentials').get('uri')
+    rabbit_healthcheck_url = (rabbit_config[0].get('credentials').get('http_api_uri')) + 'healthchecks/node'
+    return rabbit_url, rabbit_healthcheck_url
+
+
+if os.getenv("CF_DEPLOYMENT", False):
+    RABBIT_URL, RABBIT_HEALTHCHECK_URL = parse_vcap_services()
+else:
+    RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
+        hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
+        port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
+        user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
+        password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
+        vhost='%2f'
+    )
+
+    RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchecks/node".format(
+        user=SEFT_RABBITMQ_MONITORING_USER,
+        passw=SEFT_RABBITMQ_MONITORING_PASS,
+        hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
+        port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
+    )
+
+RABBIT_URLS = [RABBIT_URL]

@@ -1,0 +1,18 @@
+applications:
+- name: sdx-seft-consumer-service
+  buildpack: python_buildpack
+  health-check-type: process
+
+  env:
+    CF_DEPLOYMENT: True
+    SEFT_CONSUMER_HEALTHCHECK_DELAY: 5000
+    RM_SDX_GATEWAY_URL: 'http://localhost:8191/receipts'
+    FTP_HOST: 'localhost'
+    FTP_PORT: 2021
+    FTP_USER: 'ons'
+    FTP_PASS: 'ons'
+    FTP_FOLDER: '.'
+    SDX_SEFT_CONSUMER_KEYS_FILE: './sdx_test_keys/keys.yml'
+
+  services:
+   - sdx-rabbit-dev
