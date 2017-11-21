@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.2.0 2017-11-21
  - Remove sdx-common logging
  - Add Cloudfoundry deployment files
 
