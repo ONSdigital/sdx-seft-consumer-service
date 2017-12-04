@@ -1,27 +1,30 @@
 import base64
+from ftplib import Error as FTPException
 import json
 import os
-from ftplib import Error as FTPException
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3 import Retry
 from requests.packages.urllib3.exceptions import MaxRetryError
-
+from sdc.crypto.decrypter import decrypt
+from sdc.crypto.exceptions import CryptoError, InvalidTokenException
+from sdc.crypto.key_store import KeyStore, validate_required_keys
+from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.rabbit.consumers import MessageConsumer
+from tornado.httpclient import AsyncHTTPClient, HTTPError
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
 import yaml
-from app import create_and_wrap_logger, settings
+
+from app import create_and_wrap_logger
+from app import settings
 from app.sdxftp import SDXFTP
-from app.settings import BASIC_AUTH, RM_SDX_GATEWAY_URL, SERVICE_REQUEST_BACKOFF_FACTOR, SERVICE_REQUEST_TOTAL_RETRIES
-from sdc.crypto.decrypter import decrypt
-from sdc.crypto.exceptions import CryptoError, InvalidTokenException
-from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit.consumers import MessageConsumer
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
-from sdc.rabbit.publisher import QueuePublisher
-from tornado.httpclient import AsyncHTTPClient, HTTPError
+from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
+from app.settings import BASIC_AUTH
+
 
 logger = create_and_wrap_logger(__name__)
 HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
@@ -34,6 +37,7 @@ class ConsumerError(Exception):
 
 
 class SeftConsumer:
+
     @staticmethod
     def extract_file(decrypted_payload, tx_id):
         try:
@@ -45,7 +49,7 @@ class SeftConsumer:
                              file_name=file_name,
                              file_contents="Encoded data" if file_contents else file_contents)
                 raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id)
             decoded_contents = base64.b64decode(file_contents)
             return decoded_contents, file_name, case_id
         except (KeyError, ConsumerError) as e:
@@ -65,18 +69,13 @@ class SeftConsumer:
                            settings.FTP_PASS,
                            settings.FTP_PORT)
 
-        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS,
-                                        queue=settings.RABBIT_QUARANTINE_QUEUE)
-        self.consumer = MessageConsumer(durable_queue=True,
-                                        exchange=settings.RABBIT_EXCHANGE,
-                                        exchange_type="topic",
+        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS, queue=settings.RABBIT_QUARANTINE_QUEUE)
+        self.consumer = MessageConsumer(durable_queue=True, exchange=settings.RABBIT_EXCHANGE, exchange_type="topic",
                                         rabbit_queue=settings.RABBIT_QUEUE,
-                                        rabbit_urls=settings.RABBIT_URLS,
-                                        quarantine_publisher=self.publisher,
+                                        rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
                                         process=self.process)
         self.session = requests.Session()
-        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES,
-                        backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
+        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES, backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
@@ -132,31 +131,21 @@ class SeftConsumer:
         try:
             r = self.session.post(request_url, auth=BASIC_AUTH, json={'caseId': case_id})
         except MaxRetryError:
-            logger.error("Max retries exceeded (5)",
-                         request_url=request_url,
-                         tx_id=tx_id,
-                         case_id=case_id)
+            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id, case_id=case_id)
             raise RetryableError
 
         if r.status_code == 200 or r.status_code == 201:
-            logger.info("RM sdx gateway receipt creation was a success",
-                        request_url=request_url,
-                        tx_id=tx_id,
-                        case_id=case_id)
+            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id, case_id=case_id)
             return
 
         elif 400 <= r.status_code < 500:
             logger.error("RM sdx gateway returned client error, unable to receipt",
                          request_url=request_url,
                          status=r.status_code,
-                         tx_id=tx_id,
-                         case_id=case_id)
+                         tx_id=tx_id)
 
         else:
-            logger.error("Service error",
-                         request_url=request_url,
-                         tx_id=tx_id,
-                         case_id=case_id)
+            logger.error("Service error", request_url=request_url, tx_id=tx_id, case_id=case_id)
             raise RetryableError
 
     def run(self):
@@ -200,8 +189,7 @@ class GetHealth:
             logger.error("Error receiving rabbit health ", error=str(e))
             raise tornado.gen.Return(None)
         except Exception as e:
-            logger.error("Unknown exception occurred when receiving rabbit health",
-                         error=str(e))
+            logger.error("Unknown exception occurred when receiving rabbit health", error=str(e))
             raise tornado.gen.Return(None)
         return
 
@@ -226,8 +214,7 @@ class GetHealth:
         except FTPException as e:
             logger.error("FTP exception raised", error=str(e))
         except Exception as e:
-            logger.error("Unknown exception occurred when receiving ftp health",
-                         error=str(e))
+            logger.error("Unknown exception occurred when receiving ftp health", error=str(e))
 
     def determine_health(self):
         self.determine_rabbit_status()
@@ -238,13 +225,11 @@ class GetHealth:
         else:
             self.app_health = False
 
-        logger.info("Checked app health",
-                    app=self.app_health,
-                    rabbit=self.rabbit_status,
-                    ftp=self.ftp_status)
+        logger.info("Checked app health", app=self.app_health, rabbit=self.rabbit_status, ftp=self.ftp_status)
 
 
 class HealthCheck(tornado.web.RequestHandler):
+
     def __init__(self):
         self.set_health = None
 
@@ -272,14 +257,17 @@ def main():
     server.start(0)
 
     with open(settings.SDX_SEFT_CONSUMER_KEYS_FILE) as file:
-        keys = yaml.safe_load(file)
+            keys = yaml.safe_load(file)
 
     try:
 
         # Create the scheduled health task
 
         task = GetHealth()
-        sched = tornado.ioloop.PeriodicCallback(task.determine_health, HEALTHCHECK_DELAY_MILLISECONDS)
+        sched = tornado.ioloop.PeriodicCallback(
+            task.determine_health,
+            HEALTHCHECK_DELAY_MILLISECONDS,
+        )
 
         sched.start()
         logger.info("Scheduled healthcheck started.")
