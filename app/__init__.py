@@ -1,8 +1,8 @@
 import logging
 
-from structlog import wrap_logger
-
 import app.settings
+
+from structlog import wrap_logger
 
 
 __version__ = "1.2.0"

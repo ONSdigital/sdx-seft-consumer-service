@@ -1,4 +1,5 @@
 ### Unreleased
+ - Improve test output and implemented Pytest
  - Add case_id to log
 
 ### 1.2.0 2017-11-21
