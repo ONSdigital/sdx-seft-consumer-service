@@ -1,4 +1,5 @@
 ### Unreleased
+ - Add case_id to log
 
 ### 1.2.0 2017-11-21
  - Remove sdx-common logging
