@@ -49,7 +49,7 @@ class SeftConsumer:
                              file_name=file_name,
                              file_contents="Encoded data" if file_contents else file_contents)
                 raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id)
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id)
             decoded_contents = base64.b64decode(file_contents)
             return decoded_contents, file_name, case_id
         except (KeyError, ConsumerError) as e:
@@ -131,11 +131,11 @@ class SeftConsumer:
         try:
             r = self.session.post(request_url, auth=BASIC_AUTH, json={'caseId': case_id})
         except MaxRetryError:
-            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id)
+            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id, case_id=case_id)
             raise RetryableError
 
         if r.status_code == 200 or r.status_code == 201:
-            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id)
+            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id, case_id=case_id)
             return
 
         elif 400 <= r.status_code < 500:
@@ -145,7 +145,7 @@ class SeftConsumer:
                          tx_id=tx_id)
 
         else:
-            logger.error("Service error", request_url=request_url, tx_id=tx_id)
+            logger.error("Service error", request_url=request_url, tx_id=tx_id, case_id=case_id)
             raise RetryableError
 
     def run(self):
