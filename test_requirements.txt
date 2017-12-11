@@ -1,2 +1,6 @@
 pyftpdlib==1.5.2
 responses==0.7.0
+pyflakes==1.2.3
+responses==0.7.0
+pytest==3.2.3
+pytest-cov==2.5.1
