@@ -1,0 +1,22 @@
+applications:
+- name: sdx-seft-consumer-service-SPACE
+  buildpack: python_buildpack
+  health-check-type: process
+  instances: INSTANCES
+  host: sdx-seft-consumer-service-SPACE
+  timeout: 180
+  memory: 512M
+
+  env:
+    CF_DEPLOYMENT: True
+    SEFT_CONSUMER_HEALTHCHECK_DELAY: 5000
+    RM_SDX_GATEWAY_URL: 'http://localhost:8191/receipts'
+    FTP_HOST: FTPHOST
+    FTP_PORT: FTPPORT
+    FTP_USER: FTPUSER
+    FTP_PASS: FTPPASS
+    FTP_FOLDER: '.'
+    SDX_SEFT_CONSUMER_KEYS_FILE: './sdx_test_keys/keys.yml'
+
+  services:
+   - sdx-rabbit-SPACE
