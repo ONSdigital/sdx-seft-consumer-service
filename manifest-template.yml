@@ -16,7 +16,7 @@ applications:
     FTP_USER: FTPUSER
     FTP_PASS: FTPPASS
     FTP_FOLDER: '.'
-    SDX_SEFT_CONSUMER_KEYS_FILE: './sdx_test_keys/keys.yml'
+    SDX_SEFT_CONSUMER_KEYS_FILE: KEYFILE
 
   services:
    - sdx-rabbit-SPACE
