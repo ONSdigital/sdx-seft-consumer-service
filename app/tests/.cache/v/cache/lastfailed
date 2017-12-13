@@ -1,3 +1,0 @@
-{
-  "test_consumer.py::ConsumerTests::test_valid_message_ftp_path_includes_survey_id_and_unchecked": true
-}
