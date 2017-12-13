@@ -47,7 +47,8 @@ The main configuration options are listed below:
 | SEFT_FTP_PORT                         | `2021`                         | FTP port
 | SEFT_FTP_USER                         | `ons`                          | FTP username
 | SEFT_FTP_PASS                         | `ons`                          | FTP password
-| SEFT_CONSUMER_FTP_FOLDER              | `.`                            | FTP Folder
+| SEFT_CONSUMER_FTP_FOLDER              | `.`                            | FTP Folder (Deprecated)
+| SEFT_CONSUMER_FTP_FOLDER_BASE         | `.`                            | Base Ftp Folder
 | RAS_SEFT_PUBLIC_KEY                   | ``                             | RAS Public key for checking signing
 | SDX_SEFT_PRIVATE_KEY                  | ``                             | SDX Private key for decrypting
 | SDX_SEFT_PRIVATE_KEY_PASSWORD         | ``                             | Password to the SDX private key

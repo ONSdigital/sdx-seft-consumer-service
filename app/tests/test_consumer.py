@@ -12,10 +12,11 @@ from sdc.crypto.encrypter import encrypt
 from sdc.crypto.key_store import KeyStore
 from sdc.crypto.exceptions import InvalidTokenException
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from unittest.mock import patch
 import yaml
 
 from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER
-from app.settings import RM_SDX_GATEWAY_URL
+from app.settings import RM_SDX_GATEWAY_URL  # FTP_FOLDER_BASE
 from app.tests import TEST_FILES_PATH
 from app.sdxftp import SDXFTP
 
@@ -30,12 +31,62 @@ class ConsumerTests(unittest.TestCase):
         self.ras_key_store = KeyStore(self.ras_keys)
         self.consumer = SeftConsumer(self.sdx_keys)
 
+    @patch('app.main.SeftConsumer._send_receipt')
+    @patch('app.sdxftp.SDXFTP.deliver_binary')
+    def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt):
+        with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
+            contents = fb.read()
+            encoded_contents = base64.b64encode(contents)
+
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
+        with self.assertLogs(level="DEBUG") as cm:
+            payload_as_json = json.loads(payload)
+            encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
+        self.assertIn("Delivered to FTP server", cm[1][9])
+
+    @patch('app.main.SeftConsumer._send_receipt')
+    @patch('app.sdxftp.SDXFTP.deliver_binary')
+    def test_valid_message_receipt_sent(self, mock_deliver_binary, mock_send_receipt):
+        tx_id = uuid.uuid4()
+        with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
+            contents = fb.read()
+            encoded_contents = base64.b64encode(contents)
+
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "SomeSurveyId"}'
+            payload_as_json = json.loads(payload)
+            encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+            self.consumer.process(encrypted_jwt, tx_id)
+
+        mock_send_receipt.assert_called_with('601c4ee4-83ed-11e7-bb31-be2e44b06b34', tx_id)
+
+    @patch('app.main.SeftConsumer._send_receipt')
+    @patch.object(SDXFTP, 'deliver_binary', )
+    def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt):
+
+        self.consumer._ftp.deliver_binary = mock_deliver_binary
+        with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
+            contents = fb.read()
+            encoded_contents = base64.b64encode(contents)
+
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "SomeSurveyId"}'
+            payload_as_json = json.loads(payload)
+            encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
+        mock_deliver_binary.assert_called()
+        mock_deliver_binary.assert_called_with("./SomeSurveyId/unchecked", 'test1.xls', unittest.mock.ANY)
+
     def test_on_message_fails_with_empty_filename(self):
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"filename":"", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+            payload = '{"filename":"", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -43,7 +94,8 @@ class ConsumerTests(unittest.TestCase):
             self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_empty_file_contents(self):
-        payload = '{"filename":"test", "file":"", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+        payload = '{"filename":"test", "file":"", "case_id": ' \
+                  '"601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -56,7 +108,8 @@ class ConsumerTests(unittest.TestCase):
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+            payload = '{"file":"' + encoded_contents.decode() +\
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -64,7 +117,7 @@ class ConsumerTests(unittest.TestCase):
             self.consumer.process(encrypted_jwt, uuid.uuid4())
 
     def test_on_message_fails_with_missing_file_contents(self):
-        payload = '{"filename":"test", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+        payload = '{"filename":"test", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -77,7 +130,8 @@ class ConsumerTests(unittest.TestCase):
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"filename":"", "file":"' + encoded_contents.decode() + '", "case_id": ""}'
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -90,6 +144,32 @@ class ConsumerTests(unittest.TestCase):
             encoded_contents = base64.b64encode(contents)
 
             payload = '{"filename":"", "file":"' + encoded_contents.decode() + '"}'
+
+        payload_as_json = json.loads(payload)
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+        with self.assertRaises(QuarantinableError):
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
+
+    def test_on_message_fails_with_empty_survey_id(self):
+        with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
+            contents = fb.read()
+            encoded_contents = base64.b64encode(contents)
+
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": ""}'
+
+        payload_as_json = json.loads(payload)
+        encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+        with self.assertRaises(QuarantinableError):
+            self.consumer.process(encrypted_jwt, uuid.uuid4())
+
+    def test_on_message_fails_with_missing_survey_id(self):
+        with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
+            contents = fb.read()
+            encoded_contents = base64.b64encode(contents)
+
+            payload = '{"filename":"test1.xls", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -142,7 +222,8 @@ class ConsumerTests(unittest.TestCase):
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34","survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -157,7 +238,8 @@ class ConsumerTests(unittest.TestCase):
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id":"221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -171,7 +253,8 @@ class ConsumerTests(unittest.TestCase):
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
 
-            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+            payload = '{"filename":"test1", "file":"' + encoded_contents.decode() + \
+                      '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34", "survey_id": "221"}'
 
         payload_as_json = json.loads(payload)
         encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
