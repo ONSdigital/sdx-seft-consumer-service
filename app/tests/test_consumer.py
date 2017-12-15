@@ -34,6 +34,7 @@ class ConsumerTests(unittest.TestCase):
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
     def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt):
+        """Validate that the log entry is written after a successful ftp write"""
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
             encoded_contents = base64.b64encode(contents)
@@ -50,6 +51,7 @@ class ConsumerTests(unittest.TestCase):
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
     def test_valid_message_receipt_sent(self, mock_deliver_binary, mock_send_receipt):
+        """Validate that the receipt was sent"""
         tx_id = uuid.uuid4()
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -66,7 +68,12 @@ class ConsumerTests(unittest.TestCase):
     @patch('app.main.SeftConsumer._send_receipt')
     @patch.object(SDXFTP, 'deliver_binary', )
     def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt):
-
+        """Validates that the correct path and filename are used to deliver the ftp i.e that the survey_id is part
+        of the path
+        ..note:: Pycharm will pass this test even if the url is manually changed to the wrong string. It appears to be
+        a bug in pycharm with multiple patches. The test fails under the same circumstances when run via make . Hence
+        the use of assert_called AND assert_called_with
+        """
         self.consumer._ftp.deliver_binary = mock_deliver_binary
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
