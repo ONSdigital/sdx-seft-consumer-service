@@ -16,7 +16,7 @@ from unittest.mock import patch
 import yaml
 
 from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER
-from app.settings import RM_SDX_GATEWAY_URL  # FTP_FOLDER_BASE
+from app.settings import RM_SDX_GATEWAY_URL
 from app.tests import TEST_FILES_PATH
 from app.sdxftp import SDXFTP
 
