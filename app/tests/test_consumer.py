@@ -71,8 +71,7 @@ class ConsumerTests(unittest.TestCase):
         """Validates that the correct path and filename are used to deliver the ftp i.e that the survey_id is part
         of the path
         ..note:: Pycharm will pass this test even if the url is manually changed to the wrong string. It appears to be
-        a bug in pycharm with multiple patches. The test fails under the same circumstances when run via make . Hence
-        the use of assert_called AND assert_called_with
+        a bug in pycharm with multiple patches. The test fails under the same circumstances when run via make .
         """
         self.consumer._ftp.deliver_binary = mock_deliver_binary
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
@@ -84,7 +83,6 @@ class ConsumerTests(unittest.TestCase):
             payload_as_json = json.loads(payload)
             encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
             self.consumer.process(encrypted_jwt, uuid.uuid4())
-        mock_deliver_binary.assert_called()
         mock_deliver_binary.assert_called_with("./SomeSurveyId/unchecked", 'test1.xls', unittest.mock.ANY)
 
     def test_on_message_fails_with_empty_filename(self):
