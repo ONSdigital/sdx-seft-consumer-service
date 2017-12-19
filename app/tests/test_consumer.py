@@ -66,7 +66,7 @@ class ConsumerTests(unittest.TestCase):
         mock_send_receipt.assert_called_with('601c4ee4-83ed-11e7-bb31-be2e44b06b34', tx_id)
 
     @patch('app.main.SeftConsumer._send_receipt')
-    @patch.object(SDXFTP, 'deliver_binary', )
+    @patch.object(SDXFTP, 'deliver_binary')
     def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt):
         """Validates that the correct path and filename are used to deliver the ftp i.e that the survey_id is part
         of the path
