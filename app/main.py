@@ -1,4 +1,5 @@
 import base64
+import collections
 from ftplib import Error as FTPException
 import json
 import os
@@ -36,6 +37,9 @@ class ConsumerError(Exception):
     pass
 
 
+Payload = collections.namedtuple('Payload', 'decoded_contents file_name case_id survey_id')
+
+
 class SeftConsumer:
 
     @staticmethod
@@ -54,7 +58,7 @@ class SeftConsumer:
                 raise ConsumerError()
             logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id, survey_id=survey_id)
             decoded_contents = base64.b64decode(file_contents)
-            return decoded_contents, file_name, case_id, survey_id
+            return Payload(decoded_contents=decoded_contents, file_name=file_name, case_id=case_id, survey_id=survey_id)
         except (KeyError, ConsumerError) as e:
             logger.error("Required claims missing",
                          exception=str(e),
@@ -91,12 +95,13 @@ class SeftConsumer:
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
             bound_logger.info("Extracting file")
-            decoded_contents, file_name, case_id, survey_id = self.extract_file(decrypted_payload, tx_id)
-            self._send_receipt(case_id, tx_id)
 
-            file_path = self._get_ftp_file_path(survey_id)
-            bound_logger.info("Send {} to ftp server.".format(file_name))
-            self._send_to_ftp(decoded_contents, file_path, file_name, tx_id)
+            payload = self.extract_file(decrypted_payload, tx_id)
+            self._send_receipt(payload.case_id, tx_id)
+
+            file_path = self._get_ftp_file_path(payload.survey_id)
+            bound_logger.info("Send {} to ftp server.".format(payload.file_name))
+            self._send_to_ftp(payload.decoded_contents, file_path, payload.file_name, tx_id)
 
         except QuarantinableError:
             bound_logger.error("Unable to process message")
@@ -161,7 +166,7 @@ class SeftConsumer:
         self.consumer.stop()
 
     @staticmethod
-    def _get_ftp_file_path(survey_id: str):
+    def _get_ftp_file_path(survey_id):
         file_path = "{0}/{1}/unchecked".format(settings.FTP_FOLDER, survey_id)
         return file_path
 

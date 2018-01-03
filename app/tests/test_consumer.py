@@ -4,6 +4,7 @@ import unittest
 import unittest.mock
 import uuid
 from os.path import join
+from unittest.mock import patch
 
 import responses
 from requests.packages.urllib3 import HTTPConnectionPool
@@ -12,7 +13,6 @@ from sdc.crypto.encrypter import encrypt
 from sdc.crypto.key_store import KeyStore
 from sdc.crypto.exceptions import InvalidTokenException
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
-from unittest.mock import patch
 import yaml
 
 from app.main import SeftConsumer, KEY_PURPOSE_CONSUMER

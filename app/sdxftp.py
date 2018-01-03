@@ -1,5 +1,5 @@
-import io
 from ftplib import FTP
+import io
 from os.path import join
 
 
