@@ -14,9 +14,6 @@ SEFT_CONSUMER_HEALTHCHECK_DELAY = int(os.getenv("SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 RM_SDX_GATEWAY_URL = os.getenv("RM_SDX_GATEWAY_URL", "http://localhost:8191/receipts")
 
-SEFT_RABBITMQ_MONITORING_USER = os.getenv('SEFT_RABBITMQ_MONITORING_USER', 'monitor')
-SEFT_RABBITMQ_MONITORING_PASS = os.getenv('SEFT_RABBITMQ_MONITORING_PASS', 'monitor')
-
 RABBIT_QUEUE = "Seft.Responses"
 RABBIT_EXCHANGE = 'message'
 RABBIT_QUARANTINE_QUEUE = "Seft.Responses.Quarantine"
@@ -54,9 +51,9 @@ else:
         vhost='%2f'
     )
 
-    RABBIT_HEALTHCHECK_URL = "http://{user}:{passw}@{hostname}:{port}/api/healthchecks/node".format(
-        user=SEFT_RABBITMQ_MONITORING_USER,
-        passw=SEFT_RABBITMQ_MONITORING_PASS,
+    RABBIT_HEALTHCHECK_URL = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
+        user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
+        password=os.getenv("SEFT_RABBITMQ_MONITORING_PASS", "monitor"),
         hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
         port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
     )
