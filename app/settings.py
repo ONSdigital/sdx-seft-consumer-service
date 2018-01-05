@@ -22,6 +22,7 @@ FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
 FTP_PORT = int(os.getenv('SEFT_FTP_PORT', '2021'))
 FTP_USER = os.getenv('SEFT_FTP_USER', 'ons')
 FTP_PASS = os.getenv('SEFT_FTP_PASS', 'ons')
+
 FTP_FOLDER = os.getenv('SEFT_CONSUMER_FTP_FOLDER', '.')
 
 SDX_SEFT_CONSUMER_KEYS_FILE = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './sdx_test_keys/keys.yml')

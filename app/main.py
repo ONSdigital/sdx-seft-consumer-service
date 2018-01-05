@@ -1,4 +1,5 @@
 import base64
+import collections
 from ftplib import Error as FTPException
 import json
 import os
@@ -36,6 +37,9 @@ class ConsumerError(Exception):
     pass
 
 
+Payload = collections.namedtuple('Payload', 'decoded_contents file_name case_id survey_id')
+
+
 class SeftConsumer:
 
     @staticmethod
@@ -44,14 +48,17 @@ class SeftConsumer:
             file_contents = decrypted_payload['file']
             file_name = decrypted_payload['filename']
             case_id = decrypted_payload['case_id']
-            if not file_name or not file_contents or not case_id:
+            survey_id = decrypted_payload['survey_id']
+            if not file_name or not file_contents or not case_id or not survey_id:
                 logger.error("Empty claims in message",
                              file_name=file_name,
-                             file_contents="Encoded data" if file_contents else file_contents)
+                             file_contents="Encoded data" if file_contents else file_contents,
+                             case_id=case_id,
+                             survey_id=survey_id)
                 raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id)
+            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id, survey_id=survey_id)
             decoded_contents = base64.b64decode(file_contents)
-            return decoded_contents, file_name, case_id
+            return Payload(decoded_contents=decoded_contents, file_name=file_name, case_id=case_id, survey_id=survey_id)
         except (KeyError, ConsumerError) as e:
             logger.error("Required claims missing",
                          exception=str(e),
@@ -88,20 +95,22 @@ class SeftConsumer:
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
             bound_logger.info("Extracting file")
-            decoded_contents, file_name, case_id = self.extract_file(decrypted_payload, tx_id)
-            self._send_receipt(case_id, tx_id)
 
-            bound_logger.info("Send {} to ftp server.".format(file_name))
-            self._send_to_ftp(decoded_contents, file_name, tx_id)
+            payload = self.extract_file(decrypted_payload, tx_id)
+            self._send_receipt(payload.case_id, tx_id)
+
+            file_path = self._get_ftp_file_path(payload.survey_id)
+            bound_logger.info("Send {} to ftp server.".format(payload.file_name))
+            self._send_to_ftp(payload.decoded_contents, file_path, payload.file_name, tx_id)
 
         except QuarantinableError:
             bound_logger.error("Unable to process message")
             raise
 
-    def _send_to_ftp(self, decoded_contents, file_name, tx_id):
+    def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
         try:
-            self._ftp.deliver_binary(settings.FTP_FOLDER, file_name, decoded_contents)
-            logger.debug("Delivered to FTP server", tx_id=tx_id)
+            self._ftp.deliver_binary(file_path, file_name, decoded_contents)
+            logger.debug("Delivered to FTP server", tx_id=tx_id, file_path=file_path, file_name=file_name)
         except IOError as e:
             logger.error("Unable to deliver to the FTP server",
                          action="nack",
@@ -155,6 +164,11 @@ class SeftConsumer:
     def stop(self):
         logger.debug("Stopping consumer")
         self.consumer.stop()
+
+    @staticmethod
+    def _get_ftp_file_path(survey_id):
+        file_path = "{0}/{1}/unchecked".format(settings.FTP_FOLDER, survey_id)
+        return file_path
 
 
 class GetHealth:

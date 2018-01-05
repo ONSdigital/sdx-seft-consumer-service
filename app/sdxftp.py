@@ -1,5 +1,6 @@
-import io
 from ftplib import FTP
+import io
+from os.path import join
 
 
 class SDXFTP(object):
@@ -46,6 +47,5 @@ class SDXFTP(object):
         self.logger.info("Delivering binary file to FTP", host=self.host, folder=folder, filename=filename)
         stream = io.BytesIO(data)
         conn = self.get_connection()
-        conn.cwd(folder)
-        conn.storbinary('STOR ' + filename, stream)
+        conn.storbinary('STOR ' + join(folder, filename), stream)
         self.logger.info("Delivered binary file to FTP", host=self.host, folder=folder, filename=filename)
