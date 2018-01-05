@@ -5,7 +5,7 @@ import app.settings
 from structlog import wrap_logger
 
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __service__ = "sdx-seft-consumer-service"
 
 logging.basicConfig(format=app.settings.LOGGING_FORMAT,
