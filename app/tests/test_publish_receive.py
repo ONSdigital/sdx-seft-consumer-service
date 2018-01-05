@@ -6,6 +6,7 @@ import time
 import unittest
 import uuid
 from os import listdir
+import os
 from os.path import isfile, join
 from threading import Thread
 from unittest.mock import MagicMock
@@ -78,12 +79,20 @@ class ConsumerThread(Thread):
 
 class EndToEndTest(unittest.TestCase):
 
+    TARGET_PATH = "./ftp/221/unchecked/"
+
     def setUp(self):
         with open("./sdx_test_keys/keys.yml") as file:
             self.sdx_keys = yaml.safe_load(file)
         with open("./ras_test_keys/keys.yml") as file:
             self.ras_keys = yaml.safe_load(file)
         self.ras_key_store = KeyStore(self.ras_keys)
+
+        dir_path = "./ftp/221/unchecked"
+        file_list = os.listdir(dir_path)
+        for file_name in file_list:
+            if not file_name == ".placeholder":
+                os.remove(EndToEndTest.TARGET_PATH + file_name)
 
     '''
     End to end test - spins up a consumer and FTP server. Encrypts a message including a encoded spread sheet and takes the
@@ -104,7 +113,8 @@ class EndToEndTest(unittest.TestCase):
                 contents = fb.read()
                 encoded_contents = base64.b64encode(contents)
 
-                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34"}'
+                payload = '{"filename":"' + file + '", "file":"' + encoded_contents.decode() + \
+                          '", "case_id": "601c4ee4-83ed-11e7-bb31-be2e44b06b34","survey_id": "221"}'
 
             payload_as_json = json.loads(payload)
             jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
@@ -114,7 +124,7 @@ class EndToEndTest(unittest.TestCase):
             queue_publisher.publish_message(jwt, headers=headers)
 
             time.sleep(1)
-            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file), "./ftp/" + file))
+            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file), join(EndToEndTest.TARGET_PATH, file)))
         time.sleep(5)
         consumer_thread.stop()
         ftp_thread.stop()

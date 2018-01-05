@@ -1,4 +1,5 @@
 ### Unreleased
+ - Added support for different survey_ids
 
 ### 1.3.0 2018-01-04
  - Improve test output and implemented Pytest
