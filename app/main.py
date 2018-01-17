@@ -3,6 +3,7 @@ import collections
 from ftplib import Error as FTPException
 import json
 import os
+import time
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -38,6 +39,7 @@ class ConsumerError(Exception):
 
 
 Payload = collections.namedtuple('Payload', 'decoded_contents file_name case_id survey_id')
+AVResult = collections.namedtuple('AVResult', 'safe ready')
 
 
 class SeftConsumer:
@@ -100,7 +102,23 @@ class SeftConsumer:
             bound_logger.info("Extracting file")
 
             payload = self.extract_file(decrypted_payload, tx_id)
-            self._send_receipt(payload.case_id, tx_id)
+            # self._send_receipt(payload.case_id, tx_id)
+
+            bound_logger.info("Sending for AV check")
+            data_id = self.send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
+            # data_id ="ZDE4MDExN0hKZzc0dUtGMkVNUzEtUU5fdHQyTno"
+
+            bound_logger.info("Retrieve results")
+            ready = False
+            while not ready:
+                results = self.get_anti_virus_result(data_id)
+                ready = results.ready
+                if not ready:
+                    time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
+                elif not results.safe:
+                    error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id, payload.file_name)
+                    bound_logger.error(error)
+                    raise QuarantinableError()
 
             file_path = self._get_ftp_file_path(payload.survey_id)
             bound_logger.info("Send {} to ftp server.".format(payload.file_name))
@@ -109,6 +127,64 @@ class SeftConsumer:
         except QuarantinableError:
             bound_logger.error("Unable to process message")
             raise
+        except TypeError:
+            bound_logger.exception()
+            raise
+
+    def send_for_anti_virus_check(self, filename, contents):
+        url = settings.ANTI_VIRUS_BASE_URL + "file"
+        headers = {
+            "apikey": settings.ANTI_VIRUS_API_KEY,
+            "filename": filename,
+        }
+        response = requests.post(url=url, headers=headers, data=contents)
+        logger.info("Response received {}".format(response.text))
+        result = response.json()
+
+        if result.get("err"):
+            logger.error("Unable to send file for anti virus scan: {}".format(result.get("err")))
+            logger.info("Waiting before attempting again")
+            time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
+            logger.info("Return message to rabbit")
+            raise RetryableError()
+        else:
+            data_id = result.get("data_id")
+            logger.info("File sent successfully for anti virus scan", data_id=data_id)
+            return data_id
+
+    def get_anti_virus_result(self, data_id):
+        ready = False
+        safe = False
+
+        url = settings.ANTI_VIRUS_BASE_URL + "file/" + data_id
+        headers = {
+            "apikey": settings.ANTI_VIRUS_API_KEY
+        }
+
+        response = requests.get(url=url, headers=headers)
+
+        logger.info("Response from AV {}".format(response.text))
+
+        result = response.json()
+        scan_results = result.get("scan_results")
+
+        if scan_results:
+            progress_percentage = scan_results.get("progress_percentage")
+            if 100 == int(progress_percentage):
+                ready = True
+                logger.info("Anti virus scan complete: {}".format(scan_results.get("scan_all_result_a")))
+                scan_all_result_i = scan_results.get("scan_all_result_i")
+                if int(scan_all_result_i) == 0:
+                    logger.info("File is safe")
+                    safe = True
+                else:
+                    logger.error("File is not safe")
+            else:
+                logger.info("Scan not yet complete")
+        else:
+            logger.info("Results not yet available")
+
+        return AVResult(safe=safe, ready=ready)
 
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
         try:

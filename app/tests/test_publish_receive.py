@@ -119,6 +119,8 @@ class EndToEndTest(unittest.TestCase):
 
             payload_as_json = json.loads(payload)
             jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+            with open("./encrypted_files/" + file, "w") as encrypted_file:
+                encrypted_file.write(jwt)
 
             queue_publisher = QueuePublisher(settings.RABBIT_URLS, settings.RABBIT_QUEUE)
             headers = {'tx_id': str(uuid.uuid4())}

@@ -32,6 +32,11 @@ SERVICE_REQUEST_TOTAL_RETRIES = 5
 SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
 
 
+ANTI_VIRUS_BASE_URL = "https://scan.metadefender.com/v2/"
+ANTI_VIRUS_API_KEY = os.getenv("OPSWAT_AV_API_KEY", "")
+ANTI_VIRUS_WAIT_TIME = 5
+
+
 def parse_vcap_services():
     vcap_services = os.getenv("VCAP_SERVICES")
     parsed_vcap_services = json.loads(vcap_services)
