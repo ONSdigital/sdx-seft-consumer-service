@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 1.4.0 2018-02-05
  - Added support for different survey_ids
 
 ### 1.3.0 2018-01-04
