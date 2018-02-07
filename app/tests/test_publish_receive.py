@@ -18,7 +18,7 @@ from pyftpdlib.handlers import FTPHandler
 from pyftpdlib.servers import ThreadedFTPServer
 from sdc.crypto.encrypter import encrypt
 from sdc.crypto.key_store import KeyStore
-from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit import QueuePublisher
 import tornado
 import yaml
 
@@ -107,7 +107,8 @@ class EndToEndTest(unittest.TestCase):
 
         ftp_thread = FTPThread()
         ftp_thread.start()
-        files = [f for f in listdir(TEST_FILES_PATH) if isfile(join(TEST_FILES_PATH, f)) and (f.endswith(".xls") or f.endswith(".xlsx"))]
+        files = [f for f in listdir(TEST_FILES_PATH) if isfile(
+            join(TEST_FILES_PATH, f)) and (f.endswith(".xls") or f.endswith(".xlsx"))]
         for file in files:
             with open(join(TEST_FILES_PATH, file), "rb") as fb:
                 contents = fb.read()
@@ -124,7 +125,8 @@ class EndToEndTest(unittest.TestCase):
             queue_publisher.publish_message(jwt, headers=headers)
 
             time.sleep(1)
-            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file), join(EndToEndTest.TARGET_PATH, file)))
+            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file),
+                                        join(EndToEndTest.TARGET_PATH, file)))
         time.sleep(5)
         consumer_thread.stop()
         ftp_thread.stop()

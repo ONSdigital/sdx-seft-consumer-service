@@ -11,7 +11,7 @@ from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.consumers import MessageConsumer
 from tornado.httpclient import AsyncHTTPClient, HTTPError
@@ -56,7 +56,8 @@ class SeftConsumer:
                              case_id=case_id,
                              survey_id=survey_id)
                 raise ConsumerError()
-            logger.debug("Decrypted file", file_name=file_name, tx_id=tx_id, case_id=case_id, survey_id=survey_id)
+            logger.debug("Decrypted file", file_name=file_name,
+                         tx_id=tx_id, case_id=case_id, survey_id=survey_id)
             decoded_contents = base64.b64decode(file_contents)
             return Payload(decoded_contents=decoded_contents, file_name=file_name, case_id=case_id, survey_id=survey_id)
         except (KeyError, ConsumerError) as e:
@@ -76,13 +77,15 @@ class SeftConsumer:
                            settings.FTP_PASS,
                            settings.FTP_PORT)
 
-        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS, queue=settings.RABBIT_QUARANTINE_QUEUE)
+        self.publisher = QueuePublisher(urls=settings.RABBIT_URLS,
+                                        queue=settings.RABBIT_QUARANTINE_QUEUE)
         self.consumer = MessageConsumer(durable_queue=True, exchange=settings.RABBIT_EXCHANGE, exchange_type="topic",
                                         rabbit_queue=settings.RABBIT_QUEUE,
                                         rabbit_urls=settings.RABBIT_URLS, quarantine_publisher=self.publisher,
                                         process=self.process)
         self.session = requests.Session()
-        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES, backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
+        retries = Retry(total=SERVICE_REQUEST_TOTAL_RETRIES,
+                        backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
@@ -110,7 +113,8 @@ class SeftConsumer:
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
         try:
             self._ftp.deliver_binary(file_path, file_name, decoded_contents)
-            logger.debug("Delivered to FTP server", tx_id=tx_id, file_path=file_path, file_name=file_name)
+            logger.debug("Delivered to FTP server", tx_id=tx_id,
+                         file_path=file_path, file_name=file_name)
         except IOError as e:
             logger.error("Unable to deliver to the FTP server",
                          action="nack",
@@ -140,11 +144,13 @@ class SeftConsumer:
         try:
             r = self.session.post(request_url, auth=BASIC_AUTH, json={'caseId': case_id})
         except MaxRetryError:
-            logger.error("Max retries exceeded (5)", request_url=request_url, tx_id=tx_id, case_id=case_id)
+            logger.error("Max retries exceeded (5)", request_url=request_url,
+                         tx_id=tx_id, case_id=case_id)
             raise RetryableError
 
         if r.status_code == 200 or r.status_code == 201:
-            logger.info("RM sdx gateway receipt creation was a success", request_url=request_url, tx_id=tx_id, case_id=case_id)
+            logger.info("RM sdx gateway receipt creation was a success",
+                        request_url=request_url, tx_id=tx_id, case_id=case_id)
             return
 
         elif 400 <= r.status_code < 500:
@@ -239,7 +245,8 @@ class GetHealth:
         else:
             self.app_health = False
 
-        logger.info("Checked app health", app=self.app_health, rabbit=self.rabbit_status, ftp=self.ftp_status)
+        logger.info("Checked app health", app=self.app_health,
+                    rabbit=self.rabbit_status, ftp=self.ftp_status)
 
 
 class HealthCheck(tornado.web.RequestHandler):
@@ -271,7 +278,7 @@ def main():
     server.start(0)
 
     with open(settings.SDX_SEFT_CONSUMER_KEYS_FILE) as file:
-            keys = yaml.safe_load(file)
+        keys = yaml.safe_load(file)
 
     try:
 
