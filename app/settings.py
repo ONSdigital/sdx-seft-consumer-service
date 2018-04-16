@@ -33,7 +33,7 @@ SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
 
 
 ANTI_VIRUS_BASE_URL = "https://scan.metadefender.com/v2/"
-ANTI_VIRUS_API_KEY = os.getenv("OPSWAT_AV_API_KEY", "")
+ANTI_VIRUS_API_KEY = os.getenv("OPSWAT_API_KEY")
 ANTI_VIRUS_WAIT_TIME = 5
 
 

@@ -4,6 +4,7 @@ from ftplib import Error as FTPException
 import json
 import os
 import time
+import sys
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -12,8 +13,8 @@ from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit import QueuePublisher
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.exceptions import QuarantinableError, RetryableError, BadMessageError
 from sdc.rabbit.consumers import MessageConsumer
 from tornado.httpclient import AsyncHTTPClient, HTTPError
 import tornado.httpserver
@@ -32,6 +33,9 @@ logger = create_and_wrap_logger(__name__)
 HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
+
+class ConfigurationError(Exception):
+    pass
 
 
 class ConsumerError(Exception):
@@ -73,6 +77,7 @@ class SeftConsumer:
     def __init__(self, keys):
         self.key_store = KeyStore(keys)
 
+
         self._ftp = SDXFTP(logger,
                            settings.FTP_HOST,
                            settings.FTP_USER,
@@ -90,6 +95,7 @@ class SeftConsumer:
                         backoff_factor=SERVICE_REQUEST_BACKOFF_FACTOR)
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
+
 
     def process(self, encrypted_jwt, tx_id=None):
 
@@ -131,13 +137,32 @@ class SeftConsumer:
             bound_logger.exception()
             raise
 
+    def add_api_key(self, headers):
+        if settings.ANTI_VIRUS_API_KEY:
+            headers['apikey'] = settings.ANTI_VIRUS_API_KEY
+
+    def check_av_response(self, response):
+        if response.status_code != 200:
+            if response.status_code == 401:
+                logger.critical("Invalid OPSWAT API Key - unable to continue")
+                sys.exit("Invalid OPSWAT API Key - unable to continue")
+            elif 400 < response.status_code < 500:
+                raise BadMessageError()
+            elif 400 > response.status_code > 500:
+                raise RetryableError()
+        else:
+            logger.info("Response from AV OK")
+
     def send_for_anti_virus_check(self, filename, contents):
         url = settings.ANTI_VIRUS_BASE_URL + "file"
         headers = {
-            "apikey": settings.ANTI_VIRUS_API_KEY,
             "filename": filename,
         }
+        self.add_api_key(headers)
         response = requests.post(url=url, headers=headers, data=contents)
+
+        self.check_av_response(response)
+
         logger.info("Response received {}".format(response.text))
         result = response.json()
 
@@ -153,24 +178,25 @@ class SeftConsumer:
             return data_id
 
     def get_anti_virus_result(self, data_id):
-        ready = False
-        safe = False
-
         url = settings.ANTI_VIRUS_BASE_URL + "file/" + data_id
-        headers = {
-            "apikey": settings.ANTI_VIRUS_API_KEY
-        }
+        headers = {}
+        self.add_api_key(headers)
 
         response = requests.get(url=url, headers=headers)
+
+        self.check_av_response(response)
 
         logger.info("Response from AV {}".format(response.text))
 
         result = response.json()
         scan_results = result.get("scan_results")
 
+        ready = False
+        safe = False
+
         if scan_results:
             progress_percentage = scan_results.get("progress_percentage")
-            if 100 == int(progress_percentage):
+            if int(progress_percentage) == 100:
                 ready = True
                 logger.info("Anti virus scan complete: {}".format(scan_results.get("scan_all_result_a")))
                 scan_all_result_i = scan_results.get("scan_all_result_i")
