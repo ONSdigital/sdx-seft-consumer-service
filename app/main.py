@@ -4,7 +4,6 @@ from ftplib import Error as FTPException
 import json
 import os
 import time
-import sys
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -34,6 +33,7 @@ HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
 
+
 class ConfigurationError(Exception):
     pass
 
@@ -43,7 +43,7 @@ class ConsumerError(Exception):
 
 
 Payload = collections.namedtuple('Payload', 'decoded_contents file_name case_id survey_id')
-AVResult = collections.namedtuple('AVResult', 'safe ready')
+AVResult = collections.namedtuple('AVResult', 'safe ready scan_results')
 
 
 class SeftConsumer:
@@ -96,7 +96,6 @@ class SeftConsumer:
         self.session.mount('http://', HTTPAdapter(max_retries=retries))
         self.session.mount('https://', HTTPAdapter(max_retries=retries))
 
-
     def process(self, encrypted_jwt, tx_id=None):
 
         bound_logger = logger.bind(tx_id=tx_id)
@@ -108,11 +107,10 @@ class SeftConsumer:
             bound_logger.info("Extracting file")
 
             payload = self.extract_file(decrypted_payload, tx_id)
-            # self._send_receipt(payload.case_id, tx_id)
+            self._send_receipt(payload.case_id, tx_id)
 
             bound_logger.info("Sending for AV check")
             data_id = self.send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
-            # data_id ="ZDE4MDExN0hKZzc0dUtGMkVNUzEtUU5fdHQyTno"
 
             bound_logger.info("Retrieve results")
             ready = False
@@ -123,6 +121,7 @@ class SeftConsumer:
                     time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
                 elif not results.safe:
                     error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id, payload.file_name)
+                    self._write_scan_report(results, payload.file_name)
                     bound_logger.error(error)
                     raise QuarantinableError()
 
@@ -145,7 +144,7 @@ class SeftConsumer:
         if response.status_code != 200:
             if response.status_code == 401:
                 logger.critical("Invalid OPSWAT API Key - unable to continue")
-                sys.exit("Invalid OPSWAT API Key - unable to continue")
+                raise RetryableError()
             elif 400 < response.status_code < 500:
                 raise BadMessageError()
             elif 400 > response.status_code > 500:
@@ -210,7 +209,12 @@ class SeftConsumer:
         else:
             logger.info("Results not yet available")
 
-        return AVResult(safe=safe, ready=ready)
+        return AVResult(safe=safe, ready=ready, scan_results=scan_results)
+
+    def _write_scan_report(self, av_results, filename):
+        os.makedirs("./scan_results", exist_ok=True)
+        with open("./scan_results/{}.log".format(filename), "w") as file:
+            json.dump(av_results.scan_results, file, indent=True)
 
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
         try:
