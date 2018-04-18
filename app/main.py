@@ -75,8 +75,8 @@ class SeftConsumer:
             raise QuarantinableError()
 
     def __init__(self, keys):
+        self.bound_logger = logger
         self.key_store = KeyStore(keys)
-
 
         self._ftp = SDXFTP(logger,
                            settings.FTP_HOST,
@@ -98,46 +98,52 @@ class SeftConsumer:
 
     def process(self, encrypted_jwt, tx_id=None):
 
-        bound_logger = logger.bind(tx_id=tx_id)
-        bound_logger.debug("Message Received")
+        self.bound_logger = self.bound_logger.bind(tx_id=tx_id)
+        self.bound_logger.debug("Message Received")
         try:
-            bound_logger.info("Decrypting message")
+            self.bound_logger.info("Decrypting message")
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
-            bound_logger.info("Extracting file")
+            self.bound_logger.info("Extracting file")
 
             payload = self.extract_file(decrypted_payload, tx_id)
             self._send_receipt(payload.case_id, tx_id)
 
-            bound_logger.info("Sending for AV check")
-            data_id = self.send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
-
-            bound_logger.info("Retrieve results")
-            ready = False
-            while not ready:
-                results = self.get_anti_virus_result(data_id)
-                ready = results.ready
-                if not ready:
-                    time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
-                elif not results.safe:
-                    error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id, payload.file_name)
-                    self._write_scan_report(results, payload.file_name)
-                    bound_logger.error(error)
-                    raise QuarantinableError()
+            self.bound_logger.info("Retrieve results")
+            if settings.ANTI_VIRUS_ENABLED:
+                self._send_for_av_scan(payload)
 
             file_path = self._get_ftp_file_path(payload.survey_id)
-            bound_logger.info("Send {} to ftp server.".format(payload.file_name))
+            self.bound_logger.info("Send {} to ftp server.".format(payload.file_name))
             self._send_to_ftp(payload.decoded_contents, file_path, payload.file_name, tx_id)
 
         except QuarantinableError:
-            bound_logger.error("Unable to process message")
+            self.bound_logger.error("Unable to process message")
             raise
         except TypeError:
-            bound_logger.exception()
+            self.bound_logger.exception()
             raise
+
+    def _send_for_av_scan(self, payload):
+        self.bound_logger.debug("A/V scanned enabled {}".format(settings.ANTI_VIRUS_ENABLED))
+        self.bound_logger.info("Sending for AV check")
+        data_id = self.send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
+        ready = False
+        while not ready:
+            results = self.get_anti_virus_result(data_id)
+            ready = results.ready
+            if not ready:
+                time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
+            elif not results.safe:
+                error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id,
+                                                                                      payload.file_name)
+                self._write_scan_report(results, payload.file_name)
+                self.bound_logger.error(error)
+                raise QuarantinableError()
 
     def add_api_key(self, headers):
         if settings.ANTI_VIRUS_API_KEY:
+            self.bound_logger.debug("Setting A/V API key")
             headers['apikey'] = settings.ANTI_VIRUS_API_KEY
 
     def check_av_response(self, response):

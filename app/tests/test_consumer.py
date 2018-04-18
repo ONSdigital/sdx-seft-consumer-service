@@ -24,6 +24,7 @@ from app.sdxftp import SDXFTP
 class ConsumerTests(unittest.TestCase):
 
     def setUp(self):
+
         with open("./sdx_test_keys/keys.yml") as file:
             self.sdx_keys = yaml.safe_load(file)
         with open("./ras_test_keys/keys.yml") as file:
@@ -33,7 +34,8 @@ class ConsumerTests(unittest.TestCase):
 
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
-    def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt):
+    @patch('app.main.SeftConsumer._send_for_av_scan')
+    def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
         """Validate that the log entry is written after a successful ftp write"""
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -46,7 +48,16 @@ class ConsumerTests(unittest.TestCase):
             encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
 
             self.consumer.process(encrypted_jwt, uuid.uuid4())
-        self.assertIn("Delivered to FTP server", cm[1][9])
+        self.assertTrue(self._contains_statement_in_log_file("Delivered to FTP server", cm.output))
+        self.assertTrue(mock_deliver_binary.called)
+        self.assertTrue(mock_send_receipt.called)
+        self.assertTrue(mock_send_for_av_scan.called)
+
+    def _contains_statement_in_log_file(self, str, output):
+        for line in output:
+            if str in line:
+                return True
+        return False
 
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
@@ -220,7 +231,8 @@ class ConsumerTests(unittest.TestCase):
         self.assertIn("Max retries exceeded (5)", cm[0][0].message)
 
     @responses.activate
-    def test_send_ftp_IO_error(self):
+    @patch('app.main.SeftConsumer._send_for_av_scan')
+    def test_send_ftp_IO_error(self, mock_send_for_av_scan):
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'ok'}, status=201)
 
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
@@ -236,6 +248,7 @@ class ConsumerTests(unittest.TestCase):
             mock_method.side_effect = IOError
             with self.assertRaises(RetryableError):
                 self.consumer.process(encrypted_jwt, uuid.uuid4())
+        self.assertTrue(mock_send_for_av_scan.called)
 
     def test_decrypt_invalid_token_exception(self):
 

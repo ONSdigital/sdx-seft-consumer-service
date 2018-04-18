@@ -100,7 +100,7 @@ class EndToEndTest(unittest.TestCase):
 
     This test requires a rabbit mq server to be running locally with the default settings
     '''
-    @unittest.skipIf(not rabbit_running(), "This test needs a locally running rabbit mq")
+    @unittest.skipIf(not rabbit_running() or not settings.ANTI_VIRUS_API_KEY, "This test needs a locally running rabbit mq and an OPSWAT AV Metacloud API Key")
     def test_end_to_end(self):
         consumer_thread = ConsumerThread(self.sdx_keys)
         consumer_thread.start()
