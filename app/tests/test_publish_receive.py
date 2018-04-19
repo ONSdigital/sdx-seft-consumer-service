@@ -126,9 +126,11 @@ class EndToEndTest(unittest.TestCase):
             headers = {'tx_id': str(uuid.uuid4())}
             queue_publisher.publish_message(jwt, headers=headers)
 
-            time.sleep(1)
-            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file),
-                                        join(EndToEndTest.TARGET_PATH, file)))
+            # wait for opswat to return
+            time.sleep(20)
+            if 'infected' not in file:
+                self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file),
+                                            join(EndToEndTest.TARGET_PATH, file)))
         time.sleep(5)
         consumer_thread.stop()
         ftp_thread.stop()
