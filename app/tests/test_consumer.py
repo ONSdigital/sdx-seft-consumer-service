@@ -32,7 +32,7 @@ class ConsumerTests(unittest.TestCase):
         self.ras_key_store = KeyStore(self.ras_keys)
         self.consumer = SeftConsumer(self.sdx_keys)
 
-    @patch('app.main.SeftConsumer._send_for_av_scan')
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
     def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
@@ -57,7 +57,7 @@ class ConsumerTests(unittest.TestCase):
     def _contains_statement_in_log_file(statement, output):
         return [statement for line in output if statement in line]
 
-    @patch('app.main.SeftConsumer._send_for_av_scan')
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
     def test_valid_message_receipt_sent(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
@@ -77,7 +77,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertTrue(mock_deliver_binary.called)
         self.assertTrue(mock_send_for_av_scan.called)
 
-    @patch('app.main.SeftConsumer._send_for_av_scan')
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
     def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
@@ -235,7 +235,7 @@ class ConsumerTests(unittest.TestCase):
         self.assertIn("Max retries exceeded (5)", cm[0][0].message)
 
     @responses.activate
-    @patch('app.main.SeftConsumer._send_for_av_scan')
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     def test_send_ftp_IO_error(self, mock_send_for_av_scan):
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'ok'}, status=201)
 
