@@ -9,26 +9,31 @@ from sdc.rabbit.exceptions import QuarantinableError, RetryableError, BadMessage
 from app import create_and_wrap_logger
 from app import settings
 
-
 logger = create_and_wrap_logger(__name__)
 
 AVResult = collections.namedtuple('AVResult', 'safe ready scan_results')
 
 
 class AntiVirusCheck:
-
     def __init__(self, tx_id):
         self.bound_logger = logger.bind(tx_id=tx_id)
 
     def send_for_av_scan(self, payload):
         self.bound_logger.debug("A/V scanned enabled {}".format(settings.ANTI_VIRUS_ENABLED))
         self.bound_logger.info("Sending for AV check")
-        data_id = self.send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
+        data_id = self._send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
         ready = False
+        attempts = 0
         while not ready:
-            results = self.get_anti_virus_result(data_id)
+            results = self._get_anti_virus_result(data_id)
             ready = results.ready
             if not ready:
+                attempts += 1
+                if attempts >= settings.ANTI_VIRUS_WAIT_TIME:
+                    self.bound_logger.error(
+                        "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
+                                                                                                      payload.file_name))
+                    raise RetryableError()
                 time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
             elif not results.safe:
                 error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id,
@@ -36,33 +41,38 @@ class AntiVirusCheck:
                 self._write_scan_report(results, payload.file_name)
                 self.bound_logger.error(error)
                 raise QuarantinableError()
+            else:
+                self.bound_logger.debug(
+                    "File {} for case id {} has been virus checked and confirmed safe".format(payload.case_id,
+                                                                                              payload.file_name))
+                return True
 
-    def add_api_key(self, headers):
+    def _add_api_key(self, headers):
         if settings.ANTI_VIRUS_API_KEY:
             self.bound_logger.debug("Setting A/V API key")
             headers['apikey'] = settings.ANTI_VIRUS_API_KEY
 
-    def check_av_response(self, response):
+    def _check_av_response(self, response):
         if response.status_code != 200:
             if response.status_code == 401:
                 self.bound_logger.critical("Invalid OPSWAT API Key - unable to continue")
                 raise RetryableError()
-            elif 400 < response.status_code < 500:
+            elif 400 <= response.status_code < 500:
                 raise BadMessageError()
-            elif 400 > response.status_code > 500:
+            elif 300 < response.status_code >= 500:
                 raise RetryableError()
         else:
             self.bound_logger.info("Response from AV OK")
 
-    def send_for_anti_virus_check(self, filename, contents):
+    def _send_for_anti_virus_check(self, filename, contents):
         url = settings.ANTI_VIRUS_BASE_URL + "file"
         headers = {
             "filename": filename,
         }
-        self.add_api_key(headers)
+        self._add_api_key(headers)
         response = requests.post(url=url, headers=headers, data=contents)
 
-        self.check_av_response(response)
+        self._check_av_response(response)
 
         self.bound_logger.info("Response received {}".format(response.text))
         result = response.json()
@@ -78,14 +88,14 @@ class AntiVirusCheck:
             self.bound_logger.info("File sent successfully for anti virus scan", data_id=data_id)
             return data_id
 
-    def get_anti_virus_result(self, data_id):
+    def _get_anti_virus_result(self, data_id):
         url = settings.ANTI_VIRUS_BASE_URL + "file/" + data_id
         headers = {}
-        self.add_api_key(headers)
+        self._add_api_key(headers)
 
         response = requests.get(url=url, headers=headers)
 
-        self.check_av_response(response)
+        self._check_av_response(response)
 
         self.bound_logger.info("Response from AV {}".format(response.text))
 

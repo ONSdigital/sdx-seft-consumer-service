@@ -35,6 +35,7 @@ ANTI_VIRUS_ENABLED = bool(os.getenv("ANTI_VIRUS_ENABLED", "True"))
 ANTI_VIRUS_BASE_URL = "https://scan.metadefender.com/v2/"
 ANTI_VIRUS_API_KEY = os.getenv("OPSWAT_API_KEY")
 ANTI_VIRUS_WAIT_TIME = 5
+ANTI_VIRUS_MAX_ATTEMPTS = 20
 
 
 def parse_vcap_services():
