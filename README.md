@@ -53,9 +53,7 @@ The main configuration options are listed below:
 | SEFT_FTP_USER                         | `ons`                             | FTP username
 | SEFT_FTP_PASS                         | `ons`                             | FTP password
 | SEFT_CONSUMER_FTP_FOLDER              | `.`                               | FTP Folder
-| RAS_SEFT_PUBLIC_KEY                   | ``                                | RAS Public key for checking signing
-| SDX_SEFT_PRIVATE_KEY                  | ``                                | SDX Private key for decrypting
-| SDX_SEFT_PRIVATE_KEY_PASSWORD         | ``                                | Password to the SDX private key
+| SDX_SEFT_CONSUMER_KEYS_FILE           | ``                                | RAS/SDX encryption and signing keys
 | LOGGING_LEVEL                         | `DEBUG`                           | Logging sensitivity
 | ANTI_VIRUS_ENABLED                    | `True`                            | Enable or disable A/V scan
 | ANTI_VIRUS_BASE_URL                   | `https://scan.metadefender.com/v2`| The address of the A/V servers
