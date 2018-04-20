@@ -5,7 +5,8 @@ import pika
 import pika.exceptions
 from ftplib import FTP
 
-from app.main import GetHealth, make_app
+from app.health import GetHealth
+from app.main import make_app
 from app import settings
 
 
@@ -30,30 +31,29 @@ def ftp_available():
 
 class HealthCheckTest(testing.AsyncTestCase):
 
-    def setUp(self):
-        super(HealthCheckTest, self).setUp()
-        self.get_health = GetHealth()
-
     @unittest.skipIf(not rabbit_running() or not ftp_available(), 'Requires locally running rabbit and ftp server')
     @testing.gen_test(timeout=10)
     def test_get_rabbit_status(self):
-        yield self.get_health.get_rabbit_status()
-        self.assertEqual(self.get_health.rabbit_status, True)
+        get_health = GetHealth()
+        yield get_health.determine_rabbit_status()
+        self.assertEqual(get_health.rabbit_status, True)
 
     @unittest.skipIf(not rabbit_running() or not ftp_available(), 'Requires locally running rabbit and ftp server')
     def test_set_ftp_status(self):
-        self.get_health.set_ftp_status()
-        self.assertEqual(self.get_health.ftp_status, True)
+        get_health = GetHealth()
+        get_health.determine_ftp_status()
+        self.assertEqual(get_health.ftp_status, True)
 
     @unittest.skipIf(not rabbit_running() or not ftp_available(), 'Requires locally running rabbit and ftp server')
     @testing.gen_test(timeout=10)
     def test_get_health_app_health(self):
+        get_health = GetHealth()
         # Set rabbit status to true
-        yield self.get_health.get_rabbit_status()
+        get_health.rabbit_status = True
 
         # Set App Health
-        self.get_health.get_health()
-        self.assertEqual(self.get_health.app_health, True)
+        get_health.determine_health()
+        self.assertEqual(get_health.app_health, True)
 
 
 class TestHealthcheckEndpoint(testing.AsyncHTTPTestCase):
