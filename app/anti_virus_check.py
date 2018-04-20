@@ -1,13 +1,14 @@
 import collections
 import json
-import time
 import os
+import time
 
 import requests
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError, BadMessageError
 
 from app import create_and_wrap_logger
 from app import settings
+
 
 logger = create_and_wrap_logger(__name__)
 

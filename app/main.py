@@ -1,7 +1,6 @@
 import base64
 import collections
-from ftplib import Error as FTPException
-import json
+
 import os
 
 
@@ -15,7 +14,7 @@ from sdc.crypto.key_store import KeyStore, validate_required_keys
 from sdc.rabbit.publisher import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.consumers import MessageConsumer
-from tornado.httpclient import AsyncHTTPClient, HTTPError
+
 import tornado.httpserver
 import tornado.ioloop
 import tornado.web
@@ -24,6 +23,7 @@ import yaml
 from app import create_and_wrap_logger
 from app import settings
 from app.anti_virus_check import AntiVirusCheck
+from app.health import HealthCheck, GetHealth
 from app.sdxftp import SDXFTP
 from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
 from app.settings import BASIC_AUTH
@@ -190,92 +190,6 @@ class SeftConsumer:
     def _get_ftp_file_path(survey_id):
         file_path = "{0}/{1}/unchecked".format(settings.FTP_FOLDER, survey_id)
         return file_path
-
-
-class GetHealth:
-    """This handles all the healthcheck functionality for the application.
-
-       The status of the application is determined by the rabbitmq health and ftp health.
-       This is done by performing a healthcheck on rabbitmq and checking the application
-       has a live ftp connection. This check is done in the background after a delay.
-       When the healthcheck endpoint endpoint is hit a 200 status is returned with
-       app status as well as the dependencies of rabbitmq and ftp."""
-
-    def __init__(self):
-        self.ftp = SDXFTP(logger,
-                          settings.FTP_HOST,
-                          settings.FTP_USER,
-                          settings.FTP_PASS,
-                          settings.FTP_PORT,
-                          )
-        self.rabbit_status = False
-        self.ftp_status = False
-        self.app_health = False
-        self.determine_health()
-
-    @tornado.gen.coroutine
-    def determine_rabbit_status(self):
-        try:
-            response = yield AsyncHTTPClient().fetch(settings.RABBIT_HEALTHCHECK_URL)
-
-            self.rabbit_status_callback(response)
-
-        except HTTPError as e:
-            logger.error("Error receiving rabbit health ", error=str(e))
-            raise tornado.gen.Return(None)
-        except Exception as e:
-            logger.error("Unknown exception occurred when receiving rabbit health", error=str(e))
-            raise tornado.gen.Return(None)
-        return
-
-    def rabbit_status_callback(self, response):
-        self.rabbit_status = False
-        if response:
-            resp = response.body.decode()
-            res = json.loads(resp)
-            status = res.get('status')
-            logger.info("Rabbit MQ health check response {}".format(status))
-            if status == "ok":
-                logger.info("Rabbit MQ health ok")
-                self.rabbit_status = True
-
-    def determine_ftp_status(self):
-        try:
-            self.ftp_status = False
-            conn = self.ftp.get_connection()
-            if conn:
-                logger.info("FTP health ok")
-                self.ftp_status = True
-        except FTPException as e:
-            logger.error("FTP exception raised", error=str(e))
-        except Exception as e:
-            logger.error("Unknown exception occurred when receiving ftp health", error=str(e))
-
-    def determine_health(self):
-        self.determine_rabbit_status()
-        self.determine_ftp_status()
-
-        if self.rabbit_status and self.ftp_status:
-            self.app_health = True
-        else:
-            self.app_health = False
-
-        logger.info("Checked app health", app=self.app_health,
-                    rabbit=self.rabbit_status, ftp=self.ftp_status)
-
-
-class HealthCheck(tornado.web.RequestHandler):
-
-    def __init__(self):
-        self.set_health = None
-
-    def initialize(self):
-        self.set_health = GetHealth()
-
-    def get(self):
-        self.write({"status": self.set_health.app_health,
-                    "dependencies": {"rabbitmq": self.set_health.rabbit_status,
-                                     "ftp": self.set_health.ftp_status}})
 
 
 def make_app():
