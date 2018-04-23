@@ -75,6 +75,8 @@ class AntiVirusCheck:
             "filename": filename,
         }
         self._add_api_key(headers)
+
+        self.bound_logger.info("Sending for A/V scan", url=url)
         response = requests.post(url=url, headers=headers, data=contents)
 
         self._check_av_response(response)
@@ -97,6 +99,8 @@ class AntiVirusCheck:
         url = settings.ANTI_VIRUS_BASE_URL + "file/" + data_id
         headers = {}
         self._add_api_key(headers)
+
+        self.bound_logger.info("Getting result for A/V scan", url=url)
 
         response = requests.get(url=url, headers=headers)
 
