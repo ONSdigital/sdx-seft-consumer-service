@@ -90,6 +90,17 @@ class AntiVirusCheckTests(unittest.TestCase):
 
         payload = Payload(decoded_contents="test", file_name="test", case_id="1", survey_id="1")
 
+        with self.assertRaises(RetryableError):
+            anti_virus.send_for_av_scan(payload)
+
+    @requests_mock.mock()
+    def test_send_for_av_scan_forbidden(self, mock_request):
+        mock_request.post(settings.ANTI_VIRUS_BASE_URL + "file", status_code=403)
+
+        anti_virus = AntiVirusCheck(tx_id=1)
+
+        payload = Payload(decoded_contents="test", file_name="test", case_id="1", survey_id="1")
+
         with self.assertRaises(BadMessageError):
             anti_virus.send_for_av_scan(payload)
 
