@@ -38,12 +38,12 @@ class AntiVirusCheck:
                     "File {} for case id {} has been virus checked and confirmed safe".format(payload.case_id,
                                                                                               payload.file_name))
                 return True
-        else:
-            # out of attempts raise retryable error to force the response back to the queue.
-            self.bound_logger.error(
-                "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
-                                                                                              payload.file_name))
-            raise RetryableError()
+
+        # out of attempts raise retryable error to force the response back to the queue.
+        self.bound_logger.error(
+            "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
+                                                                                          payload.file_name))
+        raise RetryableError()
 
     def _add_api_key(self, headers):
         # the API key is only needed for the online cloud service
