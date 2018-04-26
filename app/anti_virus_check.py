@@ -1,6 +1,4 @@
 import collections
-import json
-import os
 import time
 
 import requests
@@ -22,18 +20,12 @@ class AntiVirusCheck:
         self.bound_logger.debug("A/V scanned enabled {}".format(settings.ANTI_VIRUS_ENABLED))
         self.bound_logger.info("Sending for AV check")
         data_id = self._send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
-        ready = False
+
         attempts = 0
-        while not ready:
+        while attempts <= settings.ANTI_VIRUS_MAX_ATTEMPTS:
+            attempts += 1
             results = self._get_anti_virus_result(data_id)
-            ready = results.ready
-            if not ready:
-                attempts += 1
-                if attempts >= settings.ANTI_VIRUS_WAIT_TIME:
-                    self.bound_logger.error(
-                        "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
-                                                                                                      payload.file_name))
-                    raise RetryableError()
+            if not results.ready:
                 time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
             elif not results.safe:
                 error = "Unsafe file detected for case id {} with filename {}".format(payload.case_id,
@@ -46,8 +38,15 @@ class AntiVirusCheck:
                     "File {} for case id {} has been virus checked and confirmed safe".format(payload.case_id,
                                                                                               payload.file_name))
                 return True
+        else:
+            # out of attempts raise retryable error to force the response back to the queue.
+            self.bound_logger.error(
+                "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
+                                                                                              payload.file_name))
+            raise RetryableError()
 
     def _add_api_key(self, headers):
+        # the API key is only needed for the online cloud service
         if settings.ANTI_VIRUS_API_KEY:
             self.bound_logger.debug("Setting A/V API key")
             headers['apikey'] = settings.ANTI_VIRUS_API_KEY
@@ -134,6 +133,4 @@ class AntiVirusCheck:
 
     def _write_scan_report(self, av_results, filename):
         self.bound_logger.info("Writing scan report for file {}".format(filename))
-        os.makedirs("./scan_results", exist_ok=True)
-        with open("./scan_results/{}.log".format(filename), "w") as file:
-            json.dump(av_results.scan_results, file, indent=True)
+        self.bound_logger.error("A/V report", report=av_results.scan_results)
