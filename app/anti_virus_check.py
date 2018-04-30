@@ -93,7 +93,7 @@ class AntiVirusCheck:
         self.bound_logger.info("Response received", response=response.text)
         try:
             result = response.json()
-        except json.JSONDecodeError():
+        except json.JSONDecodeError:
             self.bound_logger.exception("Unable to decode A/V results")
             raise RetryableError()
 
