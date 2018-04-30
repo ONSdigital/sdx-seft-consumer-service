@@ -109,13 +109,12 @@ class SeftConsumer:
             payload = self.extract_file(decrypted_payload, tx_id)
             self._send_receipt(payload.case_id, tx_id)
 
-            self.bound_logger.info("Retrieve results")
             if settings.ANTI_VIRUS_ENABLED:
                 av_check = AntiVirusCheck(tx_id=tx_id)
                 av_check.send_for_av_scan(payload)
 
             file_path = self._get_ftp_file_path(payload.survey_id)
-            self.bound_logger.info("Send {} to ftp server.".format(payload.file_name))
+            self.bound_logger.info("Sent to ftp server.", filename=payload.file_name)
             self._send_to_ftp(payload.decoded_contents, file_path, payload.file_name, tx_id)
 
         except QuarantinableError:

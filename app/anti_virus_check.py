@@ -17,9 +17,9 @@ class AntiVirusCheck:
         self.bound_logger = logger.bind(tx_id=tx_id)
 
     def send_for_av_scan(self, payload):
-        self.bound_logger.debug("A/V scanned enabled {}".format(settings.ANTI_VIRUS_ENABLED))
-        self.bound_logger.info("Sending for AV check")
+        self.bound_logger.info("Sending for AV check", filename=payload.file_name)
         data_id = self._send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
+        self.bound_logger.info("Sent for A/V check", data_id=data_id)
 
         attempts = 0
         while attempts <= settings.ANTI_VIRUS_MAX_ATTEMPTS:
