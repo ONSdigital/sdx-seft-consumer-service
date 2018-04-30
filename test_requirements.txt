@@ -4,4 +4,4 @@ pyflakes==1.2.3
 responses==0.7.0
 pytest==3.2.3
 pytest-cov==2.5.1
-requests-mock==1.4.0
+responses==0.7.0
