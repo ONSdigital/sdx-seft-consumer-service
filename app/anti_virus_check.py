@@ -71,10 +71,16 @@ class AntiVirusCheck:
                 # in this scenario we need to start over
                 self.bound_logger.critical("OPSWAT AV does not know about this scan - the primary server may have failed")
                 raise RetryableError()
-            elif 400 <= response.status_code < 500:
-                raise BadMessageError()
-            elif 500 <= response.status_code:
+            elif response.status_code == 500:
+                self.bound_logger.critical("Potential problem with the OPSWAT server")
                 raise RetryableError()
+            elif response.status_code == 503:
+                self.bound_logger.warning("OPSWAT server busy - waiting before retrying")
+                time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
+                raise RetryableError()
+            else:
+                self.bound_logger.warning("Unexpected error from OPSWAT API")
+                raise BadMessageError()
 
     def _send_for_anti_virus_check(self, filename, contents):
         url = settings.ANTI_VIRUS_BASE_URL
