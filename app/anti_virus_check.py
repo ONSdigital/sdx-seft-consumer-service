@@ -73,7 +73,7 @@ class AntiVirusCheck:
                 raise RetryableError()
             elif 400 <= response.status_code < 500:
                 raise BadMessageError()
-            elif 300 < response.status_code >= 500:
+            elif 500 <= response.status_code:
                 raise RetryableError()
 
     def _send_for_anti_virus_check(self, filename, contents):
