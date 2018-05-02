@@ -94,14 +94,18 @@ class EndToEndTest(unittest.TestCase):
             if not file_name == ".placeholder":
                 os.remove(EndToEndTest.TARGET_PATH + file_name)
 
-    '''
-    End to end test - spins up a consumer and FTP server. Encrypts a message including a encoded spread sheet and takes the
-    decrypted and reassemble file are the same files.
-
-    This test requires a rabbit mq server to be running locally with the default settings
-    '''
-    @unittest.skipIf(not rabbit_running(), "This test needs a locally running rabbit mq")
+    @unittest.skipIf(not rabbit_running() or not settings.ANTI_VIRUS_API_KEY, "This test needs a locally running rabbit mq and an OPSWAT AV Metacloud API Key")
     def test_end_to_end(self):
+        '''
+            End to end test - spins up a consumer and FTP server. Encrypts a message including a encoded spread sheet and takes the
+            decrypted and reassemble file are the same files.
+
+            This test requires a rabbit mq server to be running locally with the default settings
+
+            It also requires a valid OPSWAT API
+
+            NOTE this test should only be run manually due to it duration
+        '''
         consumer_thread = ConsumerThread(self.sdx_keys)
         consumer_thread.start()
 
@@ -119,14 +123,20 @@ class EndToEndTest(unittest.TestCase):
 
             payload_as_json = json.loads(payload)
             jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
+            with open("./encrypted_files/" + file, "w") as encrypted_file:
+                encrypted_file.write(jwt)
 
             queue_publisher = QueuePublisher(settings.RABBIT_URLS, settings.RABBIT_QUEUE)
             headers = {'tx_id': str(uuid.uuid4())}
             queue_publisher.publish_message(jwt, headers=headers)
+            # wait 30 seconds for opswat to process
+            time.sleep(30)
 
-            time.sleep(1)
-            self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file),
-                                        join(EndToEndTest.TARGET_PATH, file)))
-        time.sleep(5)
+        time.sleep(1)
         consumer_thread.stop()
         ftp_thread.stop()
+
+        for file in files:
+            if 'infected' not in file:
+                self.assertTrue(filecmp.cmp(join(TEST_FILES_PATH, file),
+                                            join(EndToEndTest.TARGET_PATH, file)))

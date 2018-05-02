@@ -1,4 +1,5 @@
 ### Unreleased
+ - OPSWAT anti-virus integration
  - Import publishers from sdc.rabbit module, not sdc.rabbit.publisher
 
 ### 1.4.0 2018-02-05
