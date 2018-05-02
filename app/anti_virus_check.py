@@ -1,5 +1,4 @@
 import collections
-import json
 import time
 
 import requests
@@ -93,12 +92,12 @@ class AntiVirusCheck:
         self.bound_logger.info("Response received", response=response.text)
         try:
             result = response.json()
-        except json.JSONDecodeError:
+        except (ValueError, TypeError):
             self.bound_logger.exception("Unable to decode A/V results")
             raise RetryableError()
 
         if result.get("err"):
-            self.bound_logger.error("Unable to send file for anti virus scan: {}".format(result.get("err")))
+            self.bound_logger.error("Unable to send file for anti virus scan", error=result.get("err"))
             self.bound_logger.info("Waiting before attempting again")
             time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
             self.bound_logger.info("Return message to rabbit")
@@ -146,8 +145,9 @@ class AntiVirusCheck:
                     self.bound_logger.info("Scan not yet complete")
             else:
                 self.bound_logger.info("Results not yet available")
-        except TypeError:
+        except ValueError:
             self.bound_logger.exception("Unable to get progress percentage for A/V scan")
+            raise RetryableError()
 
         return AVResult(safe=safe, ready=ready, scan_results=scan_results)
 
