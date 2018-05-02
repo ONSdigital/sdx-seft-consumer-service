@@ -12,7 +12,7 @@ from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit.publisher import QueuePublisher
+from sdc.rabbit.publishers import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.consumers import MessageConsumer
 from tornado.httpclient import AsyncHTTPClient, HTTPError
