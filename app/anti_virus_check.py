@@ -59,7 +59,7 @@ class AntiVirusCheck:
         try:
             response.raise_for_status()
         except requests.HTTPError as e:
-            self.bound_logger.error("Error received for A/V server", error=e)
+            self.bound_logger.error("Error received for A/V server", status_code=e.response.status_code, error=str(e))
             if response.status_code == 401:
                 self.bound_logger.critical("Invalid OPSWAT API Key - unable to continue")
                 raise RetryableError()
