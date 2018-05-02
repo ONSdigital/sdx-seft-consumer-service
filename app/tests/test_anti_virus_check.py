@@ -174,7 +174,7 @@ class AntiVirusCheckTests(unittest.TestCase):
 
         payload = Payload(decoded_contents="test", file_name="test", case_id="1", survey_id="1")
 
-        with self.assertRaises(BadMessageError):
+        with self.assertRaises(RetryableError):
             anti_virus.send_for_av_scan(payload)
 
     @responses.activate
