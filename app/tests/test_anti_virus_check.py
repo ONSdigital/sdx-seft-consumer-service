@@ -9,6 +9,24 @@ from app.main import Payload
 
 
 class AntiVirusCheckTests(unittest.TestCase):
+
+    @responses.activate
+    def test_api_key(self):
+        settings.ANTI_VIRUS_API_KEY = "test"
+
+        data_id = '123'
+        responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
+
+        responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
+                      json={'scan_results': {'progress_percentage': 100, 'scan_all_result_i': 0}}, status=200)
+
+        anti_virus = AntiVirusCheck(tx_id=1)
+
+        payload = Payload(decoded_contents="test", file_name="test", case_id="1", survey_id="1")
+
+        self.assertTrue(anti_virus.send_for_av_scan(payload))
+        assert responses.calls[0].request.headers['apikey'] == settings.ANTI_VIRUS_API_KEY
+
     @responses.activate
     def test_send_for_av_scan_success(self):
         data_id = '123'
