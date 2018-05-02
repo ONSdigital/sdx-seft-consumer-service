@@ -1,9 +1,10 @@
 sudo: required
 language: python
 env:
-    - SEFT_FTP_PORT=21
-    - SEFT_FTP_USER=''
-    - SEFT_FTP_PASS=''
+    global:
+        - SEFT_FTP_PORT=21
+        - SEFT_FTP_USER=''
+        - SEFT_FTP_PASS=''
 
 services:
     - rabbitmq
