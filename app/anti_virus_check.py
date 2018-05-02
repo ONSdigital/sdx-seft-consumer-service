@@ -63,6 +63,9 @@ class AntiVirusCheck:
             if response.status_code == 401:
                 self.bound_logger.critical("Invalid OPSWAT API Key - unable to continue")
                 raise RetryableError()
+            elif response.status_code == 403:
+                self.bound_logger.warning("OPSWAT API Rejected request may have hit usage limit - unable to continue")
+                raise RetryableError()
             elif response.status_code == 404:
                 # this could mean that the primary A/V server has failed and we've failed over to the backup
                 # in this scenario we need to start over
