@@ -86,8 +86,13 @@ class GetHealth:
 
 class HealthCheck(RequestHandler):
 
+    def __init__(self):
+        self.set_health = None
+
+    def initialize(self):
+        self.set_health = GetHealth()
+
     def get(self):
-        health = GetHealth()
-        self.write({"status": health.app_health,
-                    "dependencies": {"rabbitmq": health.rabbit_status,
-                                     "ftp": health.ftp_status}})
+        self.write({"status": self.set_health.app_health,
+                    "dependencies": {"rabbitmq": self.set_health.rabbit_status,
+                                     "ftp": self.set_health.ftp_status}})
