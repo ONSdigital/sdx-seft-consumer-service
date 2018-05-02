@@ -1,6 +1,7 @@
 sudo: required
 language: python
 services:
+    - ftp
     - rabbitmq
 python:
     - "3.6"
