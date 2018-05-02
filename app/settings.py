@@ -1,3 +1,4 @@
+from distutils.util import strtobool
 import os
 import json
 
@@ -31,7 +32,7 @@ SDX_SEFT_CONSUMER_KEYS_FILE = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './sdx_te
 SERVICE_REQUEST_TOTAL_RETRIES = 5
 SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
 
-ANTI_VIRUS_ENABLED = bool(os.getenv("ANTI_VIRUS_ENABLED", "True"))
+ANTI_VIRUS_ENABLED = bool(strtobool(os.getenv("ANTI_VIRUS_ENABLED", "True")))
 ANTI_VIRUS_BASE_URL = os.getenv("ANTI_VIRUS_BASE_URL", "https://scan.metadefender.com/v2/file")
 ANTI_VIRUS_API_KEY = os.getenv("ANTI_VIRUS_API_KEY")
 ANTI_VIRUS_WAIT_TIME = 5
