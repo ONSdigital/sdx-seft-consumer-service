@@ -17,6 +17,8 @@ class AntiVirusCheck:
     def __init__(self, tx_id):
         self.bound_logger = logger.bind(tx_id=tx_id)
         self.session = requests.Session()
+        if settings.ANTI_VIRUS_CA_CERT:
+            self.session.cert = settings.ANTI_VIRUS_CA_CERT
         self.session.mount(settings.ANTI_VIRUS_BASE_URL, HTTPAdapter(max_retries=15))
 
     def send_for_av_scan(self, payload):
