@@ -88,6 +88,4 @@ class HealthCheck(RequestHandler):
 
     def get(self):
         health = GetHealth()
-        self.write({"status": health.app_health,
-                    "dependencies": {"rabbitmq": health.rabbit_status,
-                                     "ftp": health.ftp_status}})
+        self.write({"status": "OK"})
