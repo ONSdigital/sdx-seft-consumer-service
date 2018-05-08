@@ -58,6 +58,7 @@ The main configuration options are listed below:
 | ANTI_VIRUS_ENABLED                    | `True`                            | Enable or disable A/V scan
 | ANTI_VIRUS_BASE_URL                   | `https://scan.metadefender.com/v2`| The address of the A/V servers
 | ANTI_VIRUS_API_KEY                    | ``                                | The API key for A/V servers
+| ANTI_VIRUS_CA_CERT                    | ``                                | The path ONS CA file
 
 ### License
 
