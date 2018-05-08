@@ -87,5 +87,4 @@ class GetHealth:
 class HealthCheck(RequestHandler):
 
     def get(self):
-        health = GetHealth()
         self.write({"status": "OK"})
