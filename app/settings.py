@@ -1,3 +1,4 @@
+from distutils.util import strtobool
 import os
 import json
 
@@ -30,6 +31,13 @@ SDX_SEFT_CONSUMER_KEYS_FILE = os.getenv('SDX_SEFT_CONSUMER_KEYS_FILE', './sdx_te
 # Configure the number of retries attempted before failing call
 SERVICE_REQUEST_TOTAL_RETRIES = 5
 SERVICE_REQUEST_BACKOFF_FACTOR = 0.1
+
+ANTI_VIRUS_ENABLED = bool(strtobool(os.getenv("ANTI_VIRUS_ENABLED", "True")))
+ANTI_VIRUS_BASE_URL = os.getenv("ANTI_VIRUS_BASE_URL", "https://scan.metadefender.com/v2/file")
+ANTI_VIRUS_API_KEY = os.getenv("ANTI_VIRUS_API_KEY")
+ANTI_VIRUS_CA_CERT = os.getenv("ANTI_VIRUS_CA_CERT")
+ANTI_VIRUS_WAIT_TIME = 5
+ANTI_VIRUS_MAX_ATTEMPTS = 20
 
 
 def parse_vcap_services():

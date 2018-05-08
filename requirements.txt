@@ -26,9 +26,9 @@ PyJWT==1.5.2 \
 pika==0.10.0 \
     --hash=sha256:63131aaeec48a6c8f1db1fe657e1e74cf384c3927eb7d1725e31edae4220dea4 \
     --hash=sha256:7277b4d12a99efa4058782614d84138983f9f89d690bdfcea66290d810806459
-sdc-rabbit==0.3.4 \
-    --hash=sha256:4d0ba9ba0aedd8779de388076eaac961d5ae74a5af3f381f9f8590978988a540 \
-    --hash=sha256:90fecd891fbcc48c5afe3323c5f1056f6313d069c65bdfdc8b6c9c65e4d48f80
+sdc-rabbit==1.5.1 \
+    --hash=sha256:0b2e89c88a67c9e3ea74285caf1709b4f78192ef0ed9bdf7408c262201ce2491 \
+    --hash=sha256:2bd5be562d55bcb9d080b3c7a418c05d7df019a6c2a871981253167db9c3bd71
 sdc-cryptography==0.2.0 \
     --hash=sha256:205368862b3fbb0381795755ca9f2e4d4c2fc34e88d09e6139a1df590f63df9a \
     --hash=sha256:dffe2193a1d533aa14639ad65cc6f5e028bff7a850f37fb10ac3f1829b30b3bd
@@ -175,3 +175,4 @@ olefile==0.44 \
 backports_abc==0.5 \
     --hash=sha256:52089f97fe7a9aa0d3277b220c1d730a85aefd64e1b2664696fe35317c5470a7 \
     --hash=sha256:033be54514a03e255df75c5aee8f9e672f663f93abb723444caec8fe43437bde
+

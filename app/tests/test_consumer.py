@@ -24,6 +24,7 @@ from app.sdxftp import SDXFTP
 class ConsumerTests(unittest.TestCase):
 
     def setUp(self):
+
         with open("./sdx_test_keys/keys.yml") as file:
             self.sdx_keys = yaml.safe_load(file)
         with open("./ras_test_keys/keys.yml") as file:
@@ -31,9 +32,10 @@ class ConsumerTests(unittest.TestCase):
         self.ras_key_store = KeyStore(self.ras_keys)
         self.consumer = SeftConsumer(self.sdx_keys)
 
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
-    def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt):
+    def test_valid_message_writes_to_log_after_ftp(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
         """Validate that the log entry is written after a successful ftp write"""
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
             contents = fb.read()
@@ -46,11 +48,19 @@ class ConsumerTests(unittest.TestCase):
             encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
 
             self.consumer.process(encrypted_jwt, uuid.uuid4())
-        self.assertIn("Delivered to FTP server", cm[1][9])
+        self.assertTrue(ConsumerTests._contains_statement_in_log_file("Delivered to FTP server", cm.output))
+        self.assertTrue(mock_deliver_binary.called)
+        self.assertTrue(mock_send_receipt.called)
+        self.assertTrue(mock_send_for_av_scan.called)
 
+    @staticmethod
+    def _contains_statement_in_log_file(statement, output):
+        return [statement for line in output if statement in line]
+
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
-    def test_valid_message_receipt_sent(self, mock_deliver_binary, mock_send_receipt):
+    def test_valid_message_receipt_sent(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
         """Validate that the receipt was sent"""
         tx_id = uuid.uuid4()
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
@@ -64,10 +74,13 @@ class ConsumerTests(unittest.TestCase):
             self.consumer.process(encrypted_jwt, tx_id)
 
         mock_send_receipt.assert_called_with('601c4ee4-83ed-11e7-bb31-be2e44b06b34', tx_id)
+        self.assertTrue(mock_deliver_binary.called)
+        self.assertTrue(mock_send_for_av_scan.called)
 
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
-    @patch.object(SDXFTP, 'deliver_binary')
-    def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt):
+    @patch('app.sdxftp.SDXFTP.deliver_binary')
+    def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
         """Validates that the correct path and filename are used to deliver the ftp i.e that the survey_id is part
         of the path
         ..note:: Pycharm will pass this test even if the url is manually changed to the wrong string. It appears to be
@@ -84,6 +97,8 @@ class ConsumerTests(unittest.TestCase):
             encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
             self.consumer.process(encrypted_jwt, uuid.uuid4())
         mock_deliver_binary.assert_called_with("./SomeSurveyId/unchecked", 'test1.xls', unittest.mock.ANY)
+        self.assertTrue(mock_send_receipt.called)
+        self.assertTrue(mock_send_for_av_scan.called)
 
     def test_on_message_fails_with_empty_filename(self):
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
@@ -220,7 +235,8 @@ class ConsumerTests(unittest.TestCase):
         self.assertIn("Max retries exceeded (5)", cm[0][0].message)
 
     @responses.activate
-    def test_send_ftp_IO_error(self):
+    @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
+    def test_send_ftp_IO_error(self, mock_send_for_av_scan):
         responses.add(responses.POST, RM_SDX_GATEWAY_URL, json={'status': 'ok'}, status=201)
 
         with open(join(TEST_FILES_PATH, "test1.xls"), "rb") as fb:
@@ -236,6 +252,7 @@ class ConsumerTests(unittest.TestCase):
             mock_method.side_effect = IOError
             with self.assertRaises(RetryableError):
                 self.consumer.process(encrypted_jwt, uuid.uuid4())
+        self.assertTrue(mock_send_for_av_scan.called)
 
     def test_decrypt_invalid_token_exception(self):
 

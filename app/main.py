@@ -4,6 +4,7 @@ from ftplib import Error as FTPException
 import json
 import os
 
+
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3 import Retry
@@ -11,7 +12,7 @@ from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit import QueuePublisher
+from sdc.rabbit.publishers import QueuePublisher
 from sdc.rabbit.exceptions import QuarantinableError, RetryableError
 from sdc.rabbit.consumers import MessageConsumer
 from tornado.httpclient import AsyncHTTPClient, HTTPError
@@ -22,6 +23,7 @@ import yaml
 
 from app import create_and_wrap_logger
 from app import settings
+from app.anti_virus_check import AntiVirusCheck
 from app.sdxftp import SDXFTP
 from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
 from app.settings import BASIC_AUTH
@@ -31,6 +33,10 @@ logger = create_and_wrap_logger(__name__)
 HEALTHCHECK_DELAY_MILLISECONDS = settings.SEFT_CONSUMER_HEALTHCHECK_DELAY
 
 KEY_PURPOSE_CONSUMER = "inbound"
+
+
+class ConfigurationError(Exception):
+    pass
 
 
 class ConsumerError(Exception):
@@ -69,6 +75,7 @@ class SeftConsumer:
             raise QuarantinableError()
 
     def __init__(self, keys):
+        self.bound_logger = logger
         self.key_store = KeyStore(keys)
 
         self._ftp = SDXFTP(logger,
@@ -91,23 +98,30 @@ class SeftConsumer:
 
     def process(self, encrypted_jwt, tx_id=None):
 
-        bound_logger = logger.bind(tx_id=tx_id)
-        bound_logger.debug("Message Received")
+        self.bound_logger = self.bound_logger.bind(tx_id=tx_id)
+        self.bound_logger.debug("Message Received")
         try:
-            bound_logger.info("Decrypting message")
+            self.bound_logger.info("Decrypting message")
             decrypted_payload = self._decrypt(encrypted_jwt, tx_id)
 
-            bound_logger.info("Extracting file")
+            self.bound_logger.info("Extracting file")
 
             payload = self.extract_file(decrypted_payload, tx_id)
             self._send_receipt(payload.case_id, tx_id)
 
+            if settings.ANTI_VIRUS_ENABLED:
+                av_check = AntiVirusCheck(tx_id=tx_id)
+                av_check.send_for_av_scan(payload)
+
             file_path = self._get_ftp_file_path(payload.survey_id)
-            bound_logger.info("Send {} to ftp server.".format(payload.file_name))
+            self.bound_logger.info("Sent to ftp server.", filename=payload.file_name)
             self._send_to_ftp(payload.decoded_contents, file_path, payload.file_name, tx_id)
 
         except QuarantinableError:
-            bound_logger.error("Unable to process message")
+            self.bound_logger.error("Unable to process message")
+            raise
+        except TypeError:
+            self.bound_logger.exception()
             raise
 
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
