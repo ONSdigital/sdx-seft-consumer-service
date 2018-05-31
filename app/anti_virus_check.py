@@ -88,6 +88,7 @@ class AntiVirusCheck:
         url = settings.ANTI_VIRUS_BASE_URL
         headers = {
             "filename": filename,
+            "rule": "Password Protect Allowed"
         }
         self._add_api_key(headers)
 
