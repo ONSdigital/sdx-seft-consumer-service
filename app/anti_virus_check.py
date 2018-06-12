@@ -122,7 +122,10 @@ class AntiVirusCheck:
 
     def _get_anti_virus_result(self, data_id):
         url = settings.ANTI_VIRUS_BASE_URL + "/" + data_id
-        headers = {}
+        headers = {
+            "user_agent": "sdc"
+        }
+
         self._add_api_key(headers)
 
         self.bound_logger.info("Getting result for A/V scan", url=url)
