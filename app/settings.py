@@ -38,6 +38,8 @@ ANTI_VIRUS_API_KEY = os.getenv("ANTI_VIRUS_API_KEY")
 ANTI_VIRUS_CA_CERT = os.getenv("ANTI_VIRUS_CA_CERT")
 ANTI_VIRUS_WAIT_TIME = 5
 ANTI_VIRUS_MAX_ATTEMPTS = 20
+ANTI_VIRUS_RULE = os.getenv("ANTI_VIRUS_RULE", "Password Protected Allowed")
+ANTI_VIRUS_USER_AGENT = os.getenv("ANTI_VIRUS_USER_AGENT", "sdc")
 
 
 def parse_vcap_services():
