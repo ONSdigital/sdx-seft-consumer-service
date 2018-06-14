@@ -88,6 +88,8 @@ class AntiVirusCheck:
         url = settings.ANTI_VIRUS_BASE_URL
         headers = {
             "filename": filename,
+            "rule": settings.ANTI_VIRUS_RULE,
+            "user_agent": settings.ANTI_VIRUS_USER_AGENT,
         }
         self._add_api_key(headers)
 
@@ -120,7 +122,10 @@ class AntiVirusCheck:
 
     def _get_anti_virus_result(self, data_id):
         url = settings.ANTI_VIRUS_BASE_URL + "/" + data_id
-        headers = {}
+        headers = {
+            "user_agent": settings.ANTI_VIRUS_USER_AGENT,
+        }
+
         self._add_api_key(headers)
 
         self.bound_logger.info("Getting result for A/V scan", url=url)
@@ -137,17 +142,18 @@ class AntiVirusCheck:
 
         result = response.json()
         scan_results = result.get("scan_results")
+        process_info = result.get("process_info")
 
         ready = False
         safe = False
         try:
-            if scan_results:
-                progress_percentage = scan_results.get("progress_percentage")
+            if process_info:
+                progress_percentage = process_info.get("progress_percentage")
                 if int(progress_percentage) == 100:
                     ready = True
                     self.bound_logger.info("Anti virus scan complete", scan_results=scan_results.get("scan_all_result_a"))
-                    scan_all_result_i = scan_results.get("scan_all_result_i")
-                    if int(scan_all_result_i) == 0:
+                    process_result = process_info.get("result")
+                    if process_result == "Allowed":
                         self.bound_logger.info("File is safe")
                         safe = True
                     else:
@@ -160,7 +166,7 @@ class AntiVirusCheck:
             self.bound_logger.exception("Unable to get progress percentage for A/V scan")
             raise RetryableError()
 
-        return AVResult(safe=safe, ready=ready, scan_results=scan_results)
+        return AVResult(safe=safe, ready=ready, scan_results=process_info)
 
     def _write_scan_report(self, av_results, filename):
         self.bound_logger.error("A/V report generated", filename=filename, report=av_results.scan_results)

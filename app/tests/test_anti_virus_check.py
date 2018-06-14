@@ -19,7 +19,10 @@ class AntiVirusCheckTests(unittest.TestCase):
         responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
 
         responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
-                      json={'scan_results': {'progress_percentage': 100, 'scan_all_result_i': 0}}, status=200)
+                      json={
+                          'scan_results': {'scan_all_result_i': 0},
+                          'process_info': {'progress_percentage': 100, 'result': 'Allowed'}
+                      }, status=200)
 
         anti_virus = AntiVirusCheck(tx_id=1)
 
@@ -34,7 +37,10 @@ class AntiVirusCheckTests(unittest.TestCase):
         responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
 
         responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
-                      json={'scan_results': {'progress_percentage': 100, 'scan_all_result_i': 0}}, status=200)
+                      json={
+                          'scan_results': {'scan_all_result_i': 0},
+                          'process_info': {'progress_percentage': 100, 'result': 'Allowed'}
+                      }, status=200)
 
         anti_virus = AntiVirusCheck(tx_id=1)
 
@@ -97,7 +103,10 @@ class AntiVirusCheckTests(unittest.TestCase):
         responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
 
         responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
-                      json={'scan_results': {'progress_percentage': 100, 'scan_all_result_i': 1}}, status=200)
+                      json={
+                          'scan_results': {'scan_all_result_i': 0},
+                          'process_info': {'progress_percentage': 100, 'result': 'Blocked'}
+                      }, status=200)
 
         anti_virus = AntiVirusCheck(tx_id=1)
 
@@ -124,7 +133,10 @@ class AntiVirusCheckTests(unittest.TestCase):
         responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
 
         responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
-                      json={'scan_results': {'progress_percentage': 50, 'scan_all_result_i': 0}}, status=200)
+                      json={
+                          'scan_results': {'scan_all_result_i': 0},
+                          'process_info': {'progress_percentage': 50, 'result': 'Allowed'}
+                      }, status=200)
 
         anti_virus = AntiVirusCheck(tx_id=1)
 
@@ -205,7 +217,10 @@ class AntiVirusCheckTests(unittest.TestCase):
         responses.add(responses.POST, settings.ANTI_VIRUS_BASE_URL, json={'data_id': data_id}, status=200)
 
         responses.add(responses.GET, settings.ANTI_VIRUS_BASE_URL + "/" + data_id,
-                      json={'scan_results': {'progress_percentage': 'incorrect-value', 'scan_all_result_i': 0}}, status=200)
+                      json={
+                          'scan_results': {'scan_all_result_i': 0},
+                          'process_info': {'progress_percentage': 'incorrect-value', 'result': 'Allowed'}
+                      }, status=200)
 
         anti_virus = AntiVirusCheck(tx_id=1)
 
