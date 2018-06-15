@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.0.0 2018-06-14
  - OPSWAT anti-virus integration
  - Fix health check
  - Import publishers from sdc.rabbit module, not sdc.rabbit.publisher
