@@ -1,6 +1,6 @@
 from pika import BlockingConnection
 from pika import URLParameters
-from sdc.rabbit.publishers import QueuePublisher
+from sdc.rabbit.publishers import QueuePublisher, PublishMessageError
 
 from app import create_and_wrap_logger
 from app import settings
@@ -13,15 +13,19 @@ def reprocess():
     channel = connection.channel()
     method, properties, body = channel.basic_get(settings.RABBIT_QUARANTINE_QUEUE)
     if method:
-        logger.info("Recovered quarantine message", body=body, headers=properties.headers)
-        publisher = QueuePublisher(urls=settings.RABBIT_URLS,
-                                   queue=settings.RABBIT_QUEUE)
+        try:
+            logger.info("Recovered quarantine message", body=body, headers=properties.headers)
+            publisher = QueuePublisher(urls=settings.RABBIT_URLS,
+                                       queue=settings.RABBIT_QUEUE)
 
-        publisher.publish_message(body, headers=properties.headers)
-        logger.info("Message successfully reprocess")
+            publisher.publish_message(body, headers=properties.headers)
+            logger.info("Message successfully reprocess")
 
-        channel.basic_ack(method.delivery_tag)
-        logger.info("Message ACK")
+            channel.basic_ack(method.delivery_tag)
+            logger.info("Message ACK")
+        except PublishMessageError:
+            logger.exception()
+            channel.basic_nack(method.delivery_tag)
     else:
         logger.info('No message found on quarantine queue')
 

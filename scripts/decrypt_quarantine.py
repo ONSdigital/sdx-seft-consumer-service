@@ -1,13 +1,9 @@
+import yaml
 from pika import BlockingConnection
 from pika import URLParameters
-from sdc.rabbit.publishers import QueuePublisher
-import yaml
-
 from sdc.crypto.decrypter import decrypt
-from sdc.crypto.exceptions import CryptoError, InvalidTokenException
-from sdc.crypto.key_store import KeyStore, validate_required_keys
-from sdc.rabbit.publishers import QueuePublisher
-from sdc.rabbit.exceptions import QuarantinableError, RetryableError
+from sdc.crypto.exceptions import InvalidTokenException
+from sdc.crypto.key_store import KeyStore
 
 from app import create_and_wrap_logger
 from app import settings
