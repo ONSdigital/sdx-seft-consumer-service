@@ -22,7 +22,6 @@ def decrypt_and_write():
     method, properties, body = channel.basic_get(settings.RABBIT_QUARANTINE_QUEUE)
     if method:
         logger.info("Recovered quarantine message", body=body, headers=properties.headers)
-
         try:
             decrypted_message = decrypt(body.decode("utf-8"), key_store, KEY_PURPOSE_CONSUMER)
             payload = SeftConsumer.extract_file(decrypted_message, properties.headers['tx_id'])
@@ -31,17 +30,12 @@ def decrypt_and_write():
             channel.basic_ack(method.delivery_tag)
             logger.info("Message ACK")
 
-        except (InvalidTokenException, ValueError) as e:
-            logger.error("Bad decrypt",
-                         action="quarantining",
-                         exception=str(e))
+        except (InvalidTokenException, ValueError):
+            logger.exception("Bad decrypt")
             channel.basic_nack(method.delivery_tag)
             logger.info("Nacking message")
-        except Exception as e:
-            logger.exception()
-            logger.error("Failed to process",
-                         action="retry",
-                         exception=str(e))
+        except Exception:
+            logger.exception("Failed to process")
             channel.basic_nack(method.delivery_tag)
             logger.info("Nacking message")
     else:
