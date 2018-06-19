@@ -19,7 +19,7 @@ def reprocess():
                                        queue=settings.RABBIT_QUEUE)
 
             publisher.publish_message(body, headers=properties.headers)
-            logger.info("Message successfully reprocess")
+            logger.info("Message successfully reprocessed")
 
             channel.basic_ack(method.delivery_tag)
             logger.info("Message ACK")
