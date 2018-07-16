@@ -79,7 +79,7 @@ class ConsumerThread(Thread):
 
 class EndToEndTest(unittest.TestCase):
 
-    TARGET_PATH = "./ftp/221/unchecked/"
+    TARGET_PATH = "./ftp/221/"
 
     def setUp(self):
         with open("./sdx_test_keys/keys.yml") as file:
@@ -88,7 +88,7 @@ class EndToEndTest(unittest.TestCase):
             self.ras_keys = yaml.safe_load(file)
         self.ras_key_store = KeyStore(self.ras_keys)
 
-        dir_path = "./ftp/221/unchecked"
+        dir_path = "./ftp/221"
         file_list = os.listdir(dir_path)
         for file_name in file_list:
             if not file_name == ".placeholder":

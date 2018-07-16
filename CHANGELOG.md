@@ -1,5 +1,6 @@
 ### Unreleased
  - Adding scripts for managing response on quarantine queue
+ - Remove unchecked folder and fixed log statements for AV scan
 
 ### 2.0.0 2018-06-14
  - OPSWAT anti-virus integration

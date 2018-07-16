@@ -138,8 +138,6 @@ class AntiVirusCheck:
 
         self._check_av_response(response)
 
-        self.bound_logger.info("Response from AV", response=response.text)
-
         result = response.json()
         scan_results = result.get("scan_results")
         process_info = result.get("process_info")
@@ -166,7 +164,7 @@ class AntiVirusCheck:
             self.bound_logger.exception("Unable to get progress percentage for A/V scan")
             raise RetryableError()
 
-        return AVResult(safe=safe, ready=ready, scan_results=process_info)
+        return AVResult(safe=safe, ready=ready, scan_results=result)
 
     def _write_scan_report(self, av_results, filename):
         self.bound_logger.error("A/V report generated", filename=filename, report=av_results.scan_results)

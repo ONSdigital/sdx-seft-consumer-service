@@ -187,7 +187,7 @@ class SeftConsumer:
 
     @staticmethod
     def _get_ftp_file_path(survey_id):
-        file_path = "{0}/{1}/unchecked".format(settings.FTP_FOLDER, survey_id)
+        file_path = "{0}/{1}".format(settings.FTP_FOLDER, survey_id)
         return file_path
 
 

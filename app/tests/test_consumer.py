@@ -80,7 +80,7 @@ class ConsumerTests(unittest.TestCase):
     @patch('app.anti_virus_check.AntiVirusCheck.send_for_av_scan')
     @patch('app.main.SeftConsumer._send_receipt')
     @patch('app.sdxftp.SDXFTP.deliver_binary')
-    def test_valid_message_ftp_path_includes_survey_id_and_unchecked(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
+    def test_valid_message_ftp_path_includes_survey_id(self, mock_deliver_binary, mock_send_receipt, mock_send_for_av_scan):
         """Validates that the correct path and filename are used to deliver the ftp i.e that the survey_id is part
         of the path
         ..note:: Pycharm will pass this test even if the url is manually changed to the wrong string. It appears to be
@@ -96,7 +96,7 @@ class ConsumerTests(unittest.TestCase):
             payload_as_json = json.loads(payload)
             encrypted_jwt = encrypt(payload_as_json, self.ras_key_store, KEY_PURPOSE_CONSUMER)
             self.consumer.process(encrypted_jwt, uuid.uuid4())
-        mock_deliver_binary.assert_called_with("./SomeSurveyId/unchecked", 'test1.xls', unittest.mock.ANY)
+        mock_deliver_binary.assert_called_with("./SomeSurveyId", 'test1.xls', unittest.mock.ANY)
         self.assertTrue(mock_send_receipt.called)
         self.assertTrue(mock_send_for_av_scan.called)
 
