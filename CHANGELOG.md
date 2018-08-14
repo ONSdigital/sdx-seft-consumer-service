@@ -1,5 +1,5 @@
 ### Unreleased
-
+ - Update dependencies to fix security vulnerability
 
 ### 2.1.0 2018-07-31
  - Adding scripts for managing response on quarantine queue
