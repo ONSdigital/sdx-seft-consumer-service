@@ -107,6 +107,7 @@ class SeftConsumer:
             self.bound_logger.info("Extracting file")
 
             payload = self.extract_file(decrypted_payload, tx_id)
+            self.bound_logger = self.bound_logger.bind(case_id=payload.case_id, survey_id=payload.survey_id)
             self._send_receipt(payload.case_id, tx_id)
 
             if settings.ANTI_VIRUS_ENABLED:
