@@ -1,4 +1,5 @@
 ### Unreleased
+ - Add case_id and survey_id to logger fields to aid in debugging
  - Update dependencies to fix security vulnerability
 
 ### 2.1.0 2018-07-31
