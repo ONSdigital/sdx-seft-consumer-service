@@ -29,7 +29,7 @@ class AntiVirusCheckTests(unittest.TestCase):
         payload = Payload(decoded_contents="test", file_name="test", case_id="1", survey_id="1")
 
         self.assertTrue(anti_virus.send_for_av_scan(payload))
-        self.assertEquals(responses.calls[0].request.headers['apikey'], settings.ANTI_VIRUS_API_KEY)
+        self.assertEqual(responses.calls[0].request.headers['apikey'], settings.ANTI_VIRUS_API_KEY)
 
     @responses.activate
     def test_send_for_av_scan_success(self):
