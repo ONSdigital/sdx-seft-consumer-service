@@ -1,4 +1,6 @@
 ### Unreleased
+ - Update version of sdc-cryptography to 0.3.0
+ - Update version of requests to 2.21.0 to fix security issue
 
 ### 2.2.0 2018-12-20
  - Add case_id and survey_id to logger fields to aid in debugging
