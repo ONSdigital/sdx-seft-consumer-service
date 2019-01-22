@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.2.1 2019-01-22
  - Update version of sdc-cryptography to 0.3.0
  - Update version of requests to 2.21.0 to fix security issue
 
