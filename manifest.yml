@@ -6,7 +6,6 @@ applications:
   env:
     CF_DEPLOYMENT: True
     SEFT_CONSUMER_HEALTHCHECK_DELAY: 5000
-    RM_SDX_GATEWAY_URL: 'http://localhost:8191/receipts'
     SEFT_FTP_HOST: localhost
     SEFT_FTP_PORT: 21
     SEFT_FTP_USER: password

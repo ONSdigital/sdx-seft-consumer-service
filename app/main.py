@@ -7,7 +7,6 @@ import os
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3 import Retry
-from requests.packages.urllib3.exceptions import MaxRetryError
 from sdc.crypto.decrypter import decrypt
 from sdc.crypto.exceptions import CryptoError, InvalidTokenException
 from sdc.crypto.key_store import KeyStore, validate_required_keys
@@ -25,8 +24,7 @@ from app import settings
 from app.anti_virus_check import AntiVirusCheck
 from app.health import HealthCheck, GetHealth
 from app.sdxftp import SDXFTP
-from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR, RM_SDX_GATEWAY_URL
-from app.settings import BASIC_AUTH
+from app.settings import SERVICE_REQUEST_TOTAL_RETRIES, SERVICE_REQUEST_BACKOFF_FACTOR
 
 
 logger = create_and_wrap_logger(__name__)
@@ -108,7 +106,6 @@ class SeftConsumer:
 
             payload = self.extract_file(decrypted_payload, tx_id)
             self.bound_logger = self.bound_logger.bind(case_id=payload.case_id, survey_id=payload.survey_id)
-            self._send_receipt(payload.case_id, tx_id)
 
             if settings.ANTI_VIRUS_ENABLED:
                 av_check = AntiVirusCheck(tx_id=tx_id)
@@ -152,31 +149,6 @@ class SeftConsumer:
                          exception=str(e),
                          tx_id=tx_id)
             raise QuarantinableError()
-
-    def _send_receipt(self, case_id, tx_id):
-        request_url = RM_SDX_GATEWAY_URL
-
-        try:
-            r = self.session.post(request_url, auth=BASIC_AUTH, json={'caseId': case_id})
-        except MaxRetryError:
-            logger.error("Max retries exceeded (5)", request_url=request_url,
-                         tx_id=tx_id, case_id=case_id)
-            raise RetryableError
-
-        if r.status_code == 200 or r.status_code == 201:
-            logger.info("RM sdx gateway receipt creation was a success",
-                        request_url=request_url, tx_id=tx_id, case_id=case_id)
-            return
-
-        elif 400 <= r.status_code < 500:
-            logger.error("RM sdx gateway returned client error, unable to receipt",
-                         request_url=request_url,
-                         status=r.status_code,
-                         tx_id=tx_id)
-
-        else:
-            logger.error("Service error", request_url=request_url, tx_id=tx_id, case_id=case_id)
-            raise RetryableError
 
     def run(self):
         logger.debug("Starting consumer")

@@ -9,7 +9,6 @@ from os import listdir
 import os
 from os.path import isfile, join
 from threading import Thread
-from unittest.mock import MagicMock
 
 import pika
 from pyftpdlib.authorizers import DummyAuthorizer
@@ -66,7 +65,6 @@ class ConsumerThread(Thread):
     def __init__(self, keys):
         super().__init__()
         self._consumer = SeftConsumer(keys)
-        self._consumer._send_receipt = MagicMock(return_value=None)
 
     def run(self):
         self._consumer.run()
