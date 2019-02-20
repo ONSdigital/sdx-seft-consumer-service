@@ -1,4 +1,5 @@
 ### Unreleased
+ - Add heartbeat to improve connection reliability
 
 ### 2.3.0 2019-02-19
  - Remove receipting from service as RAS handles its own receipting when receiving the spreadsheet.
