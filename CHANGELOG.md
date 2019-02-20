@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.3.0 2019-02-19
  - Remove receipting from service as RAS handles its own receipting when receiving the spreadsheet.
 
 ### 2.2.1 2019-01-22
