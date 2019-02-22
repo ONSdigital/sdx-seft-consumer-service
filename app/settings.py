@@ -11,6 +11,8 @@ RABBIT_QUEUE = "Seft.Responses"
 RABBIT_EXCHANGE = 'message'
 RABBIT_QUARANTINE_QUEUE = "Seft.Responses.Quarantine"
 
+HEARTBEAT = "?heartbeat=5"
+
 FTP_HOST = os.getenv('SEFT_FTP_HOST', 'localhost')
 FTP_PORT = int(os.getenv('SEFT_FTP_PORT', '2021'))
 FTP_USER = os.getenv('SEFT_FTP_USER', 'ons')
@@ -52,7 +54,7 @@ else:
         user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
         password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
         vhost='%2f'
-    )
+    ) + HEARTBEAT
 
     RABBIT_HEALTHCHECK_URL = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
         user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
