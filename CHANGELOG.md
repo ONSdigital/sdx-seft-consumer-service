@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.3.1 2019-02-28
  - Add heartbeat to improve connection reliability
 
 ### 2.3.0 2019-02-19
