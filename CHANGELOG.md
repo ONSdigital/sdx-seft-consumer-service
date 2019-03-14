@@ -1,4 +1,5 @@
 ### Unreleased
+ - Revert heartbeat changes introduced in 2.3.1 while keeping package upgrades
 
 ### 2.3.1 2019-02-28
  - Add heartbeat to improve connection reliability
