@@ -1,4 +1,5 @@
 ### Unreleased
+ - Update pyyaml and fix reprocessing script
 
 ### 2.3.2 2019-03-14
  - Revert heartbeat changes introduced in 2.3.1 while keeping package upgrades
