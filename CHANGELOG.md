@@ -1,4 +1,7 @@
 ### Unreleased
+ - Remove python 3.4 and 3.5 from travis builds
+ - Add python 3.7 to travis builds
+ - Update packages such as sdc-rabbit, pika and tornado to allow upgrade to python 3.7
 
 ### 2.3.3 2019-04-02
  - Update pyyaml and fix reprocessing script
