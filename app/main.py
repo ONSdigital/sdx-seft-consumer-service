@@ -98,6 +98,7 @@ class SeftConsumer:
 
         self.bound_logger = self.bound_logger.bind(tx_id=tx_id)
         self.bound_logger = self.bound_logger.try_unbind("survey_id")
+        self.bound_logger = self.bound_logger.try_unbind("case_id")
         self.bound_logger.debug("Message Received")
         try:
             self.bound_logger.info("Decrypting message")
