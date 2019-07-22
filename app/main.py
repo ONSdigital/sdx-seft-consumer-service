@@ -97,8 +97,6 @@ class SeftConsumer:
     def process(self, encrypted_jwt, tx_id=None):
 
         self.bound_logger = self.bound_logger.bind(tx_id=tx_id)
-        self.bound_logger = self.bound_logger.try_unbind("survey_id")
-        self.bound_logger = self.bound_logger.try_unbind("case_id")
         self.bound_logger.debug("Message Received")
         try:
             self.bound_logger.info("Decrypting message")
@@ -123,6 +121,8 @@ class SeftConsumer:
         except TypeError:
             self.bound_logger.exception()
             raise
+            
+        self.bound_logger = self.bound_logger.try_unbind("survey_id", "case_id", "tx_id")
 
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
         try:
