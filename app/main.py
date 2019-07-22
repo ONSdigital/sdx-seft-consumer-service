@@ -121,7 +121,7 @@ class SeftConsumer:
         except TypeError:
             self.bound_logger.exception()
             raise
-            
+
         self.bound_logger = self.bound_logger.try_unbind("survey_id", "case_id", "tx_id")
 
     def _send_to_ftp(self, decoded_contents, file_path, file_name, tx_id):
