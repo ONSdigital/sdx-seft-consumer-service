@@ -1,5 +1,6 @@
 ### Unreleased
  - Unbind survey_id from logger at the start of processing a new SEFT
+ - Update version of sdc-cryptography to 0.4.0
 
 ### 2.4.0 2019-06-20
  - Remove python 3.4 and 3.5 from travis builds

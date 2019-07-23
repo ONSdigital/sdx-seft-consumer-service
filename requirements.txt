@@ -30,9 +30,9 @@ pika==1.0.1 \
 sdc-rabbit==1.6.0 \
     --hash=sha256:b8e26f0b358ca4942a22a67152db9220a50c8ddadbf52dd3fe39acaa960bfda4 \
     --hash=sha256:b9ba1aa00999e318675688e3a37b7119f2f9d996f436a47d64a94ad7072f5963
-sdc-cryptography==0.3.0 \
-    --hash=sha256:a517496cfa842cf4401bb7e76d204b5418f9f4edcbc4ab4860b9719ad9feb746 \
-    --hash=sha256:681bc192b1c6bdc62796246815f3b7dbb9e0514d9fd5db14215fafb2506a9c08
+sdc-cryptography==0.4.0 \
+    --hash=sha256:23d5fce8897b1e23d512c4bb7f655a009608af05ccffe1fd17de4c2f56f7e8ac \
+    --hash=sha256:dc5cee8977bbdbcac7b5673bb85d685800906640f8efffca0cd07e7ef4d3cde9
 requests==2.22.0 \
     --hash=sha256:11e007a8a2aa0323f5a921e9e6a2d7e4e67d9877e85773fba9ba6419025cbeb4 \
     --hash=sha256:9cf5292fcd0f598c671cfc1e0d7d1a7f13bb8085e9a590f48c010551dc6c4b31
