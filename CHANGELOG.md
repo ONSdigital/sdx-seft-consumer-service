@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.4.1 2019-08-01
  - Unbind survey_id from logger at the start of processing a new SEFT
 
 ### 2.4.0 2019-06-20
