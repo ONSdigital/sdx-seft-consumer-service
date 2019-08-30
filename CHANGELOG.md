@@ -1,4 +1,6 @@
 ### Unreleased
+ - Update version of sdc-rabbit to 1.7.0 to fix reconnection issues
+ - Update various other dependencies
 
 ### 2.4.2 2019-08-13
  - Update version of sdc-cryptography to 0.4.0
