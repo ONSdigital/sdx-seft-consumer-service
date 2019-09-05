@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.5.0 2019-09-04
  - Update version of sdc-rabbit to 1.7.0 to fix reconnection issues
  - Update various other dependencies
 
