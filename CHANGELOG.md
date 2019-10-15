@@ -1,4 +1,6 @@
 ### Unreleased
+ - Update amount of logging and increased amount of metadata on certain log lines
+ - Removed unused ConfigurationError exception class
 
 ### 2.5.0 2019-09-04
  - Update version of sdc-rabbit to 1.7.0 to fix reconnection issues
