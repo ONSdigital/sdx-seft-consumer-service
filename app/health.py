@@ -66,10 +66,10 @@ class GetHealth:
             if conn:
                 logger.info("FTP health ok")
                 self.ftp_status = True
-        except FTPException as e:
-            logger.error("FTP exception raised", error=str(e))
-        except Exception as e:
-            logger.error("Unknown exception occurred when receiving ftp health", error=str(e))
+        except FTPException:
+            logger.exception("FTP exception raised")
+        except Exception:  #pylint: disable=broad-except
+            logger.exception("Unknown exception occurred when receiving ftp health")
 
     def determine_health(self):
         self.determine_rabbit_status()
