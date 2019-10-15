@@ -68,7 +68,7 @@ class GetHealth:
                 self.ftp_status = True
         except FTPException:
             logger.exception("FTP exception raised")
-        except Exception:  #pylint: disable=broad-except
+        except Exception:  # pylint: disable=broad-except
             logger.exception("Unknown exception occurred when receiving ftp health")
 
     def determine_health(self):
