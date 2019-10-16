@@ -22,6 +22,13 @@ class AntiVirusCheck:
         self.session.mount(settings.ANTI_VIRUS_BASE_URL, HTTPAdapter(max_retries=15))
 
     def send_for_av_scan(self, payload):
+        """Sends the file to the anti-virus service to be scanned.
+        This function is blocking as it repeatedly checks every few seconds (as defined by
+        the ANTI_VIRUS_WAIT_TIME variable) to see if the scan is done, only proceeding once it's
+        complete.
+
+        Raises a QuarantinableError if the file is deemed not safe.
+        """
         self.bound_logger.info("Sending for AV check", filename=payload.file_name)
         data_id = self._send_for_anti_virus_check(payload.file_name, payload.decoded_contents)
         self.bound_logger.info("Sent for A/V check", data_id=data_id)
@@ -34,21 +41,22 @@ class AntiVirusCheck:
             attempts += 1
             results = self._get_anti_virus_result(data_id)
             if not results.ready:
+                self.bound_logger.info("Results not ready", attempts=attempts, case_id=payload.case_id, filename=payload.file_name)
                 time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
             elif not results.safe:
-                error = "Unsafe file detected".format(case_id=payload.case_id, filename=payload.file_name)
                 self._write_scan_report(results, payload.file_name)
-                self.bound_logger.error(error)
+                self.bound_logger.error("Unsafe file detected", case_id=payload.case_id, filename=payload.file_name)
                 raise QuarantinableError()
             else:
-                self.bound_logger.debug(
+                self.bound_logger.info(
                     "File has been virus checked and confirmed safe", case_id=payload.case_id, filename=payload.file_name)
                 return True
 
         # out of attempts raise retryable error to force the response back to the queue.
-        self.bound_logger.error(
-            "Unable to get results of Anti-virus scan for case id {} and file {} ".format(payload.case_id,
-                                                                                          payload.file_name))
+        self.bound_logger.error("Unable to get results of Anti-virus scan",
+                                attempts=attempts,
+                                case_id=payload.case_id,
+                                filename=payload.file_name)
         raise RetryableError()
 
     def _add_api_key(self, headers):
@@ -60,8 +68,8 @@ class AntiVirusCheck:
     def _check_av_response(self, response):
         try:
             response.raise_for_status()
-        except requests.HTTPError as e:
-            self.bound_logger.error("Error received for A/V server", status_code=e.response.status_code, error=str(e))
+        except requests.HTTPError:
+            self.bound_logger.exception("Error received for A/V server", status_code=response.status_code)
             if response.status_code == 401:
                 self.bound_logger.critical("Invalid OPSWAT API Key - unable to continue")
                 raise RetryableError()
@@ -115,13 +123,13 @@ class AntiVirusCheck:
             time.sleep(settings.ANTI_VIRUS_WAIT_TIME)
             self.bound_logger.info("Return message to rabbit")
             raise RetryableError()
-        else:
-            data_id = result.get("data_id")
-            self.bound_logger.info("File sent successfully for anti virus scan", data_id=data_id)
-            return data_id
+
+        data_id = result.get("data_id")
+        self.bound_logger.info("File sent successfully for anti virus scan", data_id=data_id)
+        return data_id
 
     def _get_anti_virus_result(self, data_id):
-        url = settings.ANTI_VIRUS_BASE_URL + "/" + data_id
+        url = f"{settings.ANTI_VIRUS_BASE_URL}/{data_id}"
         headers = {
             "user_agent": settings.ANTI_VIRUS_USER_AGENT,
         }
@@ -157,7 +165,7 @@ class AntiVirusCheck:
                     else:
                         self.bound_logger.error("File is not safe")
                 else:
-                    self.bound_logger.info("Scan not yet complete")
+                    self.bound_logger.info("Scan not yet complete", progress_percentage=progress_percentage)
             else:
                 self.bound_logger.info("Results not yet available")
         except ValueError:
