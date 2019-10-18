@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.5.1 2019-10-18
  - Update amount of logging and increased amount of metadata on certain log lines
  - Removed unused ConfigurationError exception class
 
