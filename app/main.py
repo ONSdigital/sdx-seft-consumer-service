@@ -54,7 +54,8 @@ class SeftConsumer:
                              file_name=file_name,
                              file_contents="Encoded data" if file_contents else file_contents,
                              case_id=case_id,
-                             survey_id=survey_id)
+                             survey_id=survey_id,
+                             tx_id=tx_id)
                 raise ConsumerError()
             logger.debug("Decrypted file", file_name=file_name,
                          tx_id=tx_id, case_id=case_id, survey_id=survey_id)
