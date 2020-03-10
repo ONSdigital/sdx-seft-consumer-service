@@ -1,4 +1,5 @@
 ### Unreleased
+ - Add transaction ID to logged errors during file extraction
 
 ### 2.5.2 2019-11-08
  - Add python 3.8 to travis build
