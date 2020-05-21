@@ -1,4 +1,6 @@
 ### Unreleased
+
+### 2.5.4 2020-05-21
   - Updated packages
 
 ### 2.5.3 2020-03-18
