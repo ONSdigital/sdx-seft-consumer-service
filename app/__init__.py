@@ -5,7 +5,7 @@ import app.settings
 from structlog import wrap_logger
 
 
-__version__ = "2.5.4"
+__version__ = "2.5.5"
 
 __service__ = "sdx-seft-consumer-service"
 
