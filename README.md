@@ -6,12 +6,13 @@ Microservice for consuming SEFT files from RAS via a Rabbit MQ and sending onto 
 be scanned by the anti-virus server.
 
 # Generate the public/private key pair
+```shell
+$ openssl genrsa -aes256 -out sdc-seft-encryption-sdx-private-key.pem 4096
+$ openssl rsa -pubout -in sdc-seft-encryption-sdx-private-key.pem -out sdc-seft-encryption-sdx-public-key.pem
 
-openssl genrsa -aes256 -out sdc-seft-encryption-sdx-private-key.pem 4096
-openssl rsa -pubout -in sdc-seft-encryption-sdx-private-key.pem -out sdc-seft-encryption-sdx-public-key.pem
-
-openssl genrsa -aes256 -out sdc-seft-signing-ras-private-key.pem 4096
-openssl rsa -pubout -in sdc-seft-signing-ras-private-key.pem -out sdc-seft-signing-ras-public-key.pem
+$ openssl genrsa -aes256 -out sdc-seft-signing-ras-private-key.pem 4096
+$ openssl rsa -pubout -in sdc-seft-signing-ras-private-key.pem -out sdc-seft-signing-ras-public-key.pem
+```
 
 Once these keys have been generated you'll need to use the sdc-cryptography library to convert them to the required yml
 format (https://github.com/ONSdigital/sdc-cryptography)
@@ -45,8 +46,6 @@ $ docker build -t sdx-seft-consumer .
 ## Usage
 
 Start sdx-seft-consumer service using the following command:
-
-or:
 ```shell
 $ make start
 ````
