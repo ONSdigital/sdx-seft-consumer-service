@@ -1,6 +1,5 @@
 from distutils.util import strtobool
 import os
-import json
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL", "DEBUG")
 LOGGING_FORMAT = "%(asctime)s.%(msecs)06dZ|%(levelname)s: sdx-seft-consumer-service: %(message)s"
@@ -34,31 +33,19 @@ ANTI_VIRUS_RULE = os.getenv("ANTI_VIRUS_RULE", "Password Protected Allowed")
 ANTI_VIRUS_USER_AGENT = os.getenv("ANTI_VIRUS_USER_AGENT", "sdc")
 
 
-def parse_vcap_services():
-    vcap_services = os.getenv("VCAP_SERVICES")
-    parsed_vcap_services = json.loads(vcap_services)
-    rabbit_config = parsed_vcap_services.get('rabbitmq')
-    rabbit_url = rabbit_config[0].get('credentials').get('uri')
-    rabbit_healthcheck_url = (rabbit_config[0].get('credentials').get('http_api_uri')) + 'healthchecks/node'
-    return rabbit_url, rabbit_healthcheck_url
+RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
+    hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
+    port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
+    user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
+    password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
+    vhost='%2f'
+)
 
-
-if os.getenv("CF_DEPLOYMENT", False):
-    RABBIT_URL, RABBIT_HEALTHCHECK_URL = parse_vcap_services()
-else:
-    RABBIT_URL = 'amqp://{user}:{password}@{hostname}:{port}/{vhost}'.format(
-        hostname=os.getenv('SEFT_RABBITMQ_HOST', '127.0.0.1'),
-        port=os.getenv('SEFT_RABBITMQ_PORT', 5672),
-        user=os.getenv('SEFT_RABBITMQ_DEFAULT_USER', 'guest'),
-        password=os.getenv('SEFT_RABBITMQ_DEFAULT_PASS', 'guest'),
-        vhost='%2f'
-    )
-
-    RABBIT_HEALTHCHECK_URL = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
-        user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
-        password=os.getenv("SEFT_RABBITMQ_MONITORING_PASS", "monitor"),
-        hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
-        port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
-    )
+RABBIT_HEALTHCHECK_URL = "http://{user}:{password}@{hostname}:{port}/api/healthchecks/node".format(
+    user=os.getenv("SEFT_RABBITMQ_MONITORING_USER", "monitor"),
+    password=os.getenv("SEFT_RABBITMQ_MONITORING_PASS", "monitor"),
+    hostname=os.getenv('SEFT_RABBITMQ_HOST', 'localhost'),
+    port=os.getenv('SEFT_RABBITMQ_HEALTHCHECK_PORT', 15672)
+)
 
 RABBIT_URLS = [RABBIT_URL]

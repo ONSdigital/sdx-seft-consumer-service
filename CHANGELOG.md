@@ -1,4 +1,12 @@
 ### Unreleased
+
+### 2.5.5 2020-06-09
+  - Remove Cloudfoundry deployment files
+
+### 2.5.4 2020-05-21
+  - Updated packages
+
+### 2.5.3 2020-03-18
  - Add transaction ID to logged errors during file extraction
 
 ### 2.5.2 2019-11-08
