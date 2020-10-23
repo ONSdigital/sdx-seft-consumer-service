@@ -27,8 +27,8 @@ ANTI_VIRUS_ENABLED = bool(strtobool(os.getenv("ANTI_VIRUS_ENABLED", "True")))
 ANTI_VIRUS_BASE_URL = os.getenv("ANTI_VIRUS_BASE_URL", "https://scan.metadefender.com/v2/file")
 ANTI_VIRUS_API_KEY = os.getenv("ANTI_VIRUS_API_KEY")
 ANTI_VIRUS_CA_CERT = os.getenv("ANTI_VIRUS_CA_CERT")
-ANTI_VIRUS_WAIT_TIME = 5
-ANTI_VIRUS_MAX_ATTEMPTS = 20
+ANTI_VIRUS_WAIT_TIME = int(os.getenv('ANTI_VIRUS_WAIT_TIME', '5'))
+ANTI_VIRUS_MAX_ATTEMPTS = int(os.getenv('ANTI_VIRUS_MAX_ATTEMPTS', '20'))
 ANTI_VIRUS_RULE = os.getenv("ANTI_VIRUS_RULE", "Password Protected Allowed")
 ANTI_VIRUS_USER_AGENT = os.getenv("ANTI_VIRUS_USER_AGENT", "sdc")
 
