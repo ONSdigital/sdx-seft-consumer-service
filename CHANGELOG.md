@@ -1,4 +1,6 @@
 ### Unreleased
+
+## 2.6.0 2020-10-23
   - configurable av settings
 
 ### 2.5.5 2020-06-09
