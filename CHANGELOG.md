@@ -1,4 +1,5 @@
 ### Unreleased
+  - configurable av settings
 
 ### 2.5.5 2020-06-09
   - Remove Cloudfoundry deployment files
